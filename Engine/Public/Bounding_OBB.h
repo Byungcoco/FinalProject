@@ -27,7 +27,7 @@ public:
 	virtual _bool IntersectWithRay_Local(class CGameInstance* pGameInstance, OUT Vec3& vOut) override;
 	virtual _bool IntersectWithRay_World(class CRay* pRay, OUT Vec3& vOut) override;
 	virtual _bool IntersectWithRay_Local(class CRay* pRay, OUT Vec3& vOut) override;
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 public:
 	virtual HRESULT Render(PrimitiveBatch<VertexPositionColor>* pBatch, _bool isColl) override;
 #endif

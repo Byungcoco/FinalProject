@@ -93,7 +93,7 @@ void CWeapon::Ready_Before_Render(_float fTimeDelta)
 		break;
 	}
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	m_pGameInstance->Push_DebugComponent(Get_Component<CCollider>());
 #endif
 }

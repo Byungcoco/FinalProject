@@ -49,7 +49,7 @@ HRESULT CStateBase_Player::Start(void* pArg, _bool bForce)
 
 void CStateBase_Player::Update(const _float fTimeDelta)
 {
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	//WINDOW_DEBUG
 	std::wstring msg = L"State: ";
 	std::wstring ws(m_strName.begin(), m_strName.end());

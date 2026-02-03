@@ -32,7 +32,7 @@ public:
 public:
     PxTransform XMMatrixToPxTransform(Matrix mat);
     Matrix PxTransformToXMMatrix(PxTransform pxTransform);
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
     HRESULT Render(PxRigidActor* pActor, XMVECTOR color = DirectX::Colors::White);
 #endif // _DEBUG
 
@@ -95,7 +95,7 @@ private:
     PxMaterial* m_pMaterial = { nullptr };
     PxCudaContextManager* m_pCudaContextManager = { nullptr };
     PxPvd* m_pPvd = { nullptr };
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
     _bool m_bEnabledDebugDraw = { false };
 #endif // _DEBUG
 

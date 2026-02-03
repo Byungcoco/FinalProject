@@ -20,7 +20,7 @@ CPhysics_Utils::CPhysics_Utils(ID3D11Device* pDevice, ID3D11DeviceContext* pCont
 
 HRESULT CPhysics_Utils::Initialize()
 {
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	m_pBatch = new PrimitiveBatch<VertexPositionColor>(m_pContext, 200000, 200000);
 	m_pEffect = new BasicEffect(m_pDevice);
 	m_pEffect->SetVertexColorEnabled(true);
@@ -51,7 +51,7 @@ HRESULT CPhysics_Utils::Initialize()
 	return S_OK;
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 HRESULT CPhysics_Utils::Render(PxRigidActor* pActor, XMVECTOR color)
 {
 	m_pEffect->SetWorld(Matrix::Identity);
@@ -217,7 +217,7 @@ CPhysics_Utils* CPhysics_Utils::Create(ID3D11Device* pDevice, ID3D11DeviceContex
 
 void CPhysics_Utils::Free()
 {
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	Safe_Delete(m_pBatch);
 	Safe_Delete(m_pEffect);
 

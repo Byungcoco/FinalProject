@@ -645,7 +645,7 @@ void CGameInstance::Push_RenderObject(RENDER_CATEGORY eCategory, CGameObject* pG
 {
 	m_pRender_Manager->Push_RenderObject(eCategory, pGO);
 }
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 inline void CGameInstance::Push_DebugComponent(CComponent* pComp)
 {
 	m_pRender_Manager->Push_DebugComponent(pComp);
@@ -766,7 +766,7 @@ HRESULT CGameInstance::Copy_BackBufferResource(ERenderTarget eTarget)
 	return m_pRenderTarget_Manager->Copy_BackBufferResource(eTarget);
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 HRESULT CGameInstance::Ready_RT_Debug(ERenderTarget eTarget, _float fX, _float fY, _float fSizeX, _float fSizeY)
 {
 	return m_pRenderTarget_Manager->Ready_Debug(eTarget, fX, fY, fSizeX, fSizeY);
@@ -850,7 +850,7 @@ void CGameInstance::RegisterPhysicsMesh(_uint levelIndex, _wstring prototypeTag)
 	m_pPhysics_Module->RegisterPhysicsMesh(levelIndex, prototypeTag);
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 void CGameInstance::Physics_Render(PxRigidActor* pActor, XMVECTOR color)
 {
 	m_pPhysics_Module->Render(pActor, color);

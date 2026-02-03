@@ -10,3 +10,9 @@ xcopy			/y			.\Engine\Bin\Debug\Shader_Deffered.cso	.\Client\Bin\Debug\
 xcopy			/y			.\Engine\Bin\Release\Shader_Deffered.cso	.\Client\Bin\Release\
 
 xcopy			/y			.\Engine\Public\*.*						.\EngineSDK\Include\
+
+// Profile build setting
+xcopy			/y			.\Engine\Bin\Profile\Engine.dll			.\Client\Bin\Profile\
+xcopy			/y			.\Engine\Bin\Profile\Engine.dll			.\Tool\Bin\Profile\
+xcopy			/y			.\Engine\Bin\Profile\Engine.lib			.\EngineSDK\Library\Profile\
+xcopy			/y			.\Engine\Bin\Profile\Shader_Deffered.cso	.\Client\Bin\Profile\

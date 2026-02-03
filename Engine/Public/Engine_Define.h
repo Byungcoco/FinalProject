@@ -19,7 +19,7 @@
 
 #pragma warning(disable : 4251)
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>

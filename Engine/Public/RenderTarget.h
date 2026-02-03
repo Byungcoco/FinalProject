@@ -25,7 +25,7 @@ public:
 	ID3D11Texture2D* Get_Texture2D() const { return m_pTexture2D; }
 	void Clear();
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	HRESULT Ready_Debug(_float fX, _float fY, _float fSizeX, _float fSizeY);
 	HRESULT Render(class CShader* pShader, class CVIBuffer_Rect_Tex* pVIBuffer);
 	Matrix m_matWorld = {};

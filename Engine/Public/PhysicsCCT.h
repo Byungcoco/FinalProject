@@ -19,7 +19,7 @@ public:
 	void Awake();
 	void Update();
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	void Render();
 #endif // _DEBUG
 

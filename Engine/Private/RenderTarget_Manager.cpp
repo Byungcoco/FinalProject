@@ -116,7 +116,7 @@ HRESULT CRenderTarget_Manager::Copy_BackBufferResource(ERenderTarget eTarget)
     return S_OK;
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 
 HRESULT CRenderTarget_Manager::Ready_Debug(ERenderTarget eTarget, _float fX, _float fY, _float fSizeX, _float fSizeY)
 {

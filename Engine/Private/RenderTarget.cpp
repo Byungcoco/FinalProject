@@ -51,7 +51,7 @@ void CRenderTarget::Clear()
 	m_pDeviceContext->ClearRenderTargetView(m_pRTV, &m_vClearColor.x);
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 
 HRESULT CRenderTarget::Ready_Debug(_float fX, _float fY, _float fSizeX, _float fSizeY)
 {

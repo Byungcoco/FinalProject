@@ -44,7 +44,7 @@ public:
 	_int Get_Layer() const { return m_iLayer; }
 private:
 	HRESULT Create_Bounding(CBounding::BOUNDING_DESC *pBoundingDesc);
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 public:
 	virtual void Render() override;
 private:

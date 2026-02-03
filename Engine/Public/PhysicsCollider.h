@@ -43,7 +43,7 @@ private:
 
 	vector<PxShape*> m_pColliderShapes;
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 public:
 	virtual void Render() override;
 #endif

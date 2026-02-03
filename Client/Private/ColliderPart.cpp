@@ -83,7 +83,7 @@ void CColliderPart::Update_Late(_float fTimeDelta)
 void CColliderPart::Ready_Before_Render(_float fTimeDelta)
 {
 	Super::Ready_Before_Render(fTimeDelta);
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	m_pGameInstance->Push_DebugComponent(Get_Component<CCollider>());
 #endif
 }

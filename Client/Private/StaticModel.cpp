@@ -178,7 +178,7 @@ void CStaticModel::Ready_Before_Render(const _float fTimeDelta)
 
 	m_pGameInstance->Push_RenderObject(RENDER_CATEGORY::NONEBLEND, this);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	m_pGameInstance->Push_DebugComponent(Get_Component<CPhysicsRigidBody>());
 #endif // _DEBUG
 }

@@ -122,7 +122,7 @@ void CPlayer::Ready_Before_Render(const _float fTimeDelta)
 {
     Super::Ready_Before_Render(fTimeDelta);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
     CTransform* pTrans = Get_Component<CTransform>();
 
     Vec3 vPos = pTrans->Get_Info(TRANSFORM_INFO_STATE::POS);

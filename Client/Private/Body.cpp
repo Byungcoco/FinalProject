@@ -89,7 +89,7 @@ void CBody::Ready_Before_Render(_float fTimeDelta)
 	Super::Ready_Before_Render(fTimeDelta);
 	m_pGameInstance->Push_RenderObject(RENDER_CATEGORY::NONEBLEND, this);
 	Super::Update_CombinedWorldMatrix(m_pMatParent);
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	m_pGameInstance->Push_DebugComponent(Get_Component<CCollider>());
 #endif 
 

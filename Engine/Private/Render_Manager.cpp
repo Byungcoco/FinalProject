@@ -107,7 +107,7 @@ HRESULT CRender_Manager::Initialize()
 
 	m_matWorld_RT = Matrix::CreateScale(viewportDesc.Width, viewportDesc.Height, 1.f);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	if (FAILED(Ready_Debug()))
 		return E_FAIL;
 #endif
@@ -235,7 +235,7 @@ HRESULT CRender_Manager::Render()
 	if (FAILED(Render_BlendUI()))
 		return E_FAIL;
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	if (m_pGameInstance->KeyButton_Down(DIK_F9))
 		m_bDebug = !m_bDebug;
 
@@ -403,7 +403,7 @@ CRender_Manager* CRender_Manager::Create(ID3D11Device* pDevice, ID3D11DeviceCont
 
 void CRender_Manager::Free()
 {
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	for (auto& pDebugCom : m_debugComponents)
 		Safe_Release(pDebugCom);
 	m_debugComponents.clear();
@@ -423,7 +423,7 @@ void CRender_Manager::Free()
 	Super::Free();
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 
 HRESULT CRender_Manager::Push_DebugComponent(CComponent* pComponent)
 {

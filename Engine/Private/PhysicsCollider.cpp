@@ -88,7 +88,7 @@ void CPhysicsCollider::SetCenter(Vec3 vCenter)
 		shape->setLocalPose(PxTransform(PxVec3(vCenter.x, vCenter.y, vCenter.z)));
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 void CPhysicsCollider::Render()
 {
 	return;

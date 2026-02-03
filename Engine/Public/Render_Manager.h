@@ -41,7 +41,7 @@ private:
 public:
 	static CRender_Manager* Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
 	virtual void Free() override;
-#ifdef  _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 public:
 	HRESULT Push_DebugComponent(class CComponent* pComponent);
 private:

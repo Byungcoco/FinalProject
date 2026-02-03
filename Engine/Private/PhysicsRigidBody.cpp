@@ -58,7 +58,7 @@ void CPhysicsRigidBody::Update()
 	// TODO : set transform
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 void CPhysicsRigidBody::Render()
 {
 	return 	m_pGameInstance->Physics_Render(m_pActor);

@@ -28,7 +28,7 @@ HRESULT CPhysics_Module::Initialize()
 	}
 	
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	//m_pPvd = PxCreatePvd(*m_pFoundation);
 	//PxPvdTransport* transport = PxDefaultPvdFileTransportCreate("D:\\PVD_Record\\phyXDebug.pxd2");
 	////PxPvdTransport* transport = PxDefaultPvdFileTransportCreate(PVD_HOST, 5425, 10);
@@ -127,7 +127,7 @@ HRESULT CPhysics_Module::Initialize()
 		}
 	}
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	//PxPvdSceneClient* pvdClient = m_pScene->getScenePvdClient();
 	//if (pvdClient)
 	//{
@@ -137,7 +137,7 @@ HRESULT CPhysics_Module::Initialize()
 	//}
 #endif // _DEBUG
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	m_pScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.f);
 	m_pScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.f);
 	m_pScene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 2.f);
@@ -184,7 +184,7 @@ void CPhysics_Module::StepPhysics(_float fTimeDelta)
 	m_pScene->simulate(fTimeDelta);
 	m_pScene->fetchResults(true);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	if (KEY_BUTTON_DOWN(DIK_F1))
 		m_bEnabledDebugDraw = !m_bEnabledDebugDraw;
 #endif // _DEBUG
@@ -205,7 +205,7 @@ Matrix CPhysics_Module::PxTransformToXMMatrix(PxTransform pxTransform)
 	return m_pUtils->PxTransformToXMMatrix(pxTransform);
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 HRESULT CPhysics_Module::Render(PxRigidActor* pActor, XMVECTOR color)
 {
 	if (!m_bEnabledDebugDraw)
@@ -284,7 +284,7 @@ void CPhysics_Module::ClearPhysics()
 	PX_RELEASE(m_pDispatcher);
 	PX_RELEASE(m_pPhysics);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	if (m_pPvd)
 	{
 		PxPvdTransport* transport = m_pPvd->getTransport();

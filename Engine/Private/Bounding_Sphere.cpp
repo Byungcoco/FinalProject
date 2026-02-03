@@ -63,7 +63,7 @@ _bool CBounding_Sphere::IntersectWithRay_Local(CRay* pRay, OUT Vec3& vOut)
     return pRay->IntersectrayWithSphere_Local(m_pOriginalDesc, vOut);
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 HRESULT CBounding_Sphere::Render(PrimitiveBatch<VertexPositionColor>* pBatch, _bool isColl)
 {
     DX::Draw(pBatch, *m_pDesc, true == isColl ? XMVectorSet(1.f, 0.f, 0.f, 1.f) : XMVectorSet(0.f, 1.f, 0.f, 1.f));

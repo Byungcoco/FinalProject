@@ -13,7 +13,7 @@ private:
 
 	HRESULT Initialize();
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 public:
     virtual HRESULT Render(PxRigidActor* pActor, XMVECTOR color = DirectX::Colors::White);
 #endif
@@ -31,7 +31,7 @@ private:
     ID3D11Device* m_pDevice = { nullptr };
     ID3D11DeviceContext* m_pContext = { nullptr };
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 private:
     PrimitiveBatch<DirectX::VertexPositionColor>* m_pBatch = { nullptr };
     BasicEffect* m_pEffect = { nullptr };

@@ -41,7 +41,7 @@ public:
 	class CRenderTarget* Get_RenderTarget(ERenderTarget eTarget) { return m_arrRenderTargets[ENUM_TO_UINT(eTarget)]; }
 	class list<class CRenderTarget*>* Get_MRT(EMRTLayer eMRTLayer) { return &m_arrMRTs[ENUM_TO_UINT(eMRTLayer)]; }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 public:
 	HRESULT Ready_Debug(ERenderTarget eTarget, _float fX, _float fY, _float fSizeX, _float fSizeY);
 	HRESULT Render(EMRTLayer eMRTLayer, class CShader* pShader, class CVIBuffer_Rect_Tex* pVIBuffer);

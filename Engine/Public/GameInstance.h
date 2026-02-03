@@ -256,7 +256,7 @@ public:
 	HRESULT End_MRT();
 	HRESULT Bind_RT_ShaderResource(ERenderTarget eTarget, class CShader* pShader);
 	HRESULT Copy_BackBufferResource(ERenderTarget eTarget);
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	HRESULT Ready_RT_Debug(ERenderTarget eTarget, _float fX, _float fY, _float fSizeX, _float fSizeY);
 	HRESULT Debug_RT_Render(EMRTLayer eMRTLayer, class CShader* pShader, class CVIBuffer_Rect_Tex* pVIBuffer);
 #endif
@@ -291,7 +291,7 @@ public:
 	PxRigidActor* GetActor(PHYSICSRIGIDBODY_DESC* rigidBodyDesc, PHYSICSCOLLIDER_DESC* colliderDesc, vector<PxShape*>& shapes);
 	PxController* GetController(PHYSICSCCT_DESC* pDesc);
 	void RegisterPhysicsMesh(_uint levelIndex, _wstring prototypeTag);
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	void Physics_Render(PxRigidActor* pActor, XMVECTOR color = DirectX::Colors::White);
 #endif // _DEBUG
 #pragma endregion

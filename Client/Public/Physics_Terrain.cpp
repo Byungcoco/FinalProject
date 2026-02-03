@@ -64,7 +64,7 @@ void CPhysics_Terrain::Ready_Before_Render(const _float fTimeDelta)
 {
 	Super::Ready_Before_Render(fTimeDelta);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	m_pGameInstance->Push_DebugComponent(Get_Component<CPhysicsRigidBody>());
 #endif // _DEBUG
 }

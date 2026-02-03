@@ -24,7 +24,7 @@ CCollider::CCollider(const CCollider& rhs)
 	, m_pDevice(rhs.m_pDevice)
 	, m_pDeviceContext(rhs.m_pDeviceContext)
 	, m_eType(rhs.m_eType)
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	, m_pBatch(rhs.m_pBatch)
 	, m_pEffect(rhs.m_pEffect)
 	, m_pInputLayout(rhs.m_pInputLayout)
@@ -33,14 +33,14 @@ CCollider::CCollider(const CCollider& rhs)
 	Safe_AddRef(m_pDevice);
 	Safe_AddRef(m_pDeviceContext);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	Safe_AddRef(m_pInputLayout);
 #endif
 }
 
 HRESULT CCollider::Initialize_Prototype()
 {
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	m_pBatch = new PrimitiveBatch<VertexPositionColor>(m_pDeviceContext);
 	m_pEffect = new BasicEffect(m_pDevice);
 	m_pEffect->SetVertexColorEnabled(true);
@@ -149,7 +149,7 @@ HRESULT CCollider::Create_Bounding(CBounding::BOUNDING_DESC* pBoundingDesc)
 	return hr;
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 void CCollider::Render()
 {
 	if (Is_Active() == false)
@@ -195,7 +195,7 @@ CComponent* CCollider::Clone(void* pArg)
 
 void CCollider::Free()
 {
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 	if (IsClone() == false)
 	{
 		Safe_Delete(m_pBatch);

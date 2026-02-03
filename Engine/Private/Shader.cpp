@@ -355,7 +355,7 @@ HRESULT CShader::Load_Shader(const D3D11_INPUT_ELEMENT_DESC* pElements, const _u
 	// Create Effect
 	{
 		_int flag = {};
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 		flag = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #else
 		flag = D3DCOMPILE_OPTIMIZATION_LEVEL1;

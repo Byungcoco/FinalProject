@@ -73,7 +73,7 @@ _bool CBounding_AABB::IntersectWithRay_Local(CRay* pRay, OUT Vec3& vOut)
     return pRay->IntersectrayWithAABB_Local(m_pOriginalDesc, vOut);
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(PROFILE)
 HRESULT CBounding_AABB::Render(PrimitiveBatch<VertexPositionColor>* pBatch, _bool bIsColl)
 {
     DX::Draw(pBatch, *m_pDesc, bIsColl == true ? ::XMVectorSet(1.f, 0.f, 0.f, 1.f) : ::XMVectorSet(0.f, 1.f, 0.f, 1.f));
