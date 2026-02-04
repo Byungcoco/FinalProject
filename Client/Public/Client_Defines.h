@@ -1,11 +1,13 @@
 #pragma once
 
 #include "Engine_Define.h"
+#include "EngineConsole.h"
 #include <windows.h>
 
 
 extern HWND			g_hWnd;
 extern HINSTANCE	g_hInstance;
+extern _bool		g_bStart;
 
 namespace Client
 {
@@ -164,10 +166,6 @@ namespace Client
 	};
 	inline constexpr size_t g_iLevelType_Count = static_cast<size_t>(ELevelType::END);
 
-	enum class EUiType {
-		IMAGE_2D = 0, IMAGE_3D, BUTTON, TEXT, VIDEO, END
-	};
-
 	enum class ERectTransform {
 		LT = 0, CT, RT, LC, C, RC, LB, CB, RB, END
 	};
@@ -237,6 +235,7 @@ namespace Client
 	inline constexpr wchar_t g_wszTriggerBoxLayer[]{ L"TriggerBox_Layer" };
 	inline constexpr wchar_t g_wszColMeshLayer[]{ L"ColMesh_Layer" };
 	inline constexpr wchar_t g_wszStaticModelLayer[]{ L"StaticModel_Layer" };
+	inline constexpr wchar_t g_wszInstanceModelLayer[]{ L"InstanceModel_Layer" };
 	inline constexpr wchar_t g_wszBossLayer[]{ L"Boss_Layer" };
 	inline constexpr wchar_t g_wszPlayerLayer[]{ L"Player_Layer" };
 	inline constexpr wchar_t g_wszDynamicCameraLayer[]{ L"DynamicCamera_Layer" };

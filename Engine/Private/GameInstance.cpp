@@ -23,6 +23,7 @@
 #include "Graphic_Device.h"
 #include "Render_Manager.h"
 #include "Physics_Module.h"
+#include "UIAction_Registry.h"
 
 IMPLEMENT_SINGLETON(CGameInstance)
 
@@ -108,6 +109,9 @@ HRESULT CGameInstance::Initialize_Engine(const ENGINE_DESC& Engine_Desc, _Inout_
 		return E_FAIL;
 
 	if (!(m_pPhysics_Module = CPhysics_Module::Create(*ppDevice, *ppContext)))
+		return E_FAIL;
+
+	if (!(m_pUIAction_Registry = CUIAction_Registry::Create()))
 		return E_FAIL;
 
 	return S_OK;
@@ -631,11 +635,18 @@ const POINT& CGameInstance::Get_MousePos()
 {
 	return m_pInput_Manager->Get_MousePos();
 }
-void CGameInstance::Set_Capture(_bool bCap)
+void CGameInstance::Request_CursorMode(ECursorMode eMode) noexcept
 {
-	m_pInput_Manager->Set_Capture(bCap);
+	m_pInput_Manager->Request_CursorMode(eMode);
 }
-
+_bool CGameInstance::ShouldIgnoreMouseDelta() noexcept
+{
+	return m_pInput_Manager->ShouldIgnoreMouseDelta();
+}
+void CGameInstance::Force_ReleaseCursor() noexcept
+{
+	m_pInput_Manager->Force_ReleaseCursor();
+}
 #pragma region RESOURCE_MANAGER
 CTextureBase* CGameInstance::GetOrAddTexture(const wstring& wstrKey, void* pArg)
 {
@@ -884,6 +895,13 @@ void CGameInstance::Physics_Render(PxRigidActor* pActor, XMVECTOR color)
 #endif
 #pragma endregion
 
+#pragma region UIACTION_REGISTRY
+CUIAction_Registry* CGameInstance::Get_UIAction_Registry() const
+{ 
+	return m_pUIAction_Registry;
+}
+#pragma endregion
+
 void CGameInstance::Free()
 {
 	Safe_Release(m_pFrustrum);
@@ -903,6 +921,7 @@ void CGameInstance::Free()
 	Safe_Release(m_pGameData_Manager);
 	Safe_Release(m_pPrototype_Manager);
 	Safe_Release(m_pPhysics_Module);
+	Safe_Release(m_pUIAction_Registry);
 	Safe_Release(m_pLevel_Manager);
 	Safe_Release(m_pEvent_Manager);
 	Safe_Release(m_pEventBus_Manager);

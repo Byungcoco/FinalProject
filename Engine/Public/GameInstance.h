@@ -179,7 +179,9 @@ public:
 	_bool Mouse_Pressing(MOUSEKEYSTATE eMouseKeyID);
 	_long Get_DIMouseMove(MOUSEMOVESTATE eMouseState);
 	const POINT& Get_MousePos();
-	void Set_Capture(_bool bCap);
+	_bool ShouldIgnoreMouseDelta() noexcept;
+	void Request_CursorMode(ECursorMode eMode) noexcept;
+	void Force_ReleaseCursor() noexcept;
 #pragma endregion
 
 #pragma region RESOURCE_MANAGER
@@ -296,6 +298,10 @@ public:
 #endif // _DEBUG
 #pragma endregion
 
+#pragma region UIACTION_REGISTRY	
+	class CUIAction_Registry* Get_UIAction_Registry()const;
+#pragma endregion
+
 // Todo - 쓰레기통 정리
 #pragma region GAMEDATA
 
@@ -323,6 +329,7 @@ private:
 	class CPicking* m_pPicking = { nullptr };
 	class CFrustrum* m_pFrustrum = { nullptr };
 	class CPhysics_Module* m_pPhysics_Module = { nullptr };
+	class CUIAction_Registry* m_pUIAction_Registry = { nullptr };
 private:
 	std::mt19937_64 m_rng;
 public:
