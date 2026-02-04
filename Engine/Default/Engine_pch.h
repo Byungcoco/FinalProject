@@ -29,6 +29,8 @@
 #include "PhysX\PxPhysicsAPI.h"
 using namespace physx;
 
+#include <nvtx3/nvtx3.hpp>
+
 #include "FMOD/fmod.hpp"
 
 #pragma push_macro("new")

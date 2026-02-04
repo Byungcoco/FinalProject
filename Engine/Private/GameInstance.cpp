@@ -115,16 +115,42 @@ HRESULT CGameInstance::Initialize_Engine(const ENGINE_DESC& Engine_Desc, _Inout_
 
 void CGameInstance::Update_Engine(_float fTimeDelta)
 {
+	NVTX3_FUNC_RANGE();
 	m_pSound_Manager->Update();
 	m_pInput_Manager->Update();
-	m_pLevel_Manager->Update(fTimeDelta);
-	m_pObject_Manager->Update_Priority(fTimeDelta);
-	m_pObject_Manager->Update(fTimeDelta);
-	m_pCollision_Manager->Update(fTimeDelta);
-	m_pObject_Manager->Update_Late(fTimeDelta);
 
-	// 피직스 시뮬레이트
-	m_pPhysics_Module->StepPhysics(fTimeDelta);
+	// Level::Update
+	{
+		nvtx3::scoped_range r{ "Level::Update" };
+		m_pLevel_Manager->Update(fTimeDelta);
+	}
+	// Object::Update_P
+	{
+		nvtx3::scoped_range r{ "Object::Update_P" };
+		m_pObject_Manager->Update_Priority(fTimeDelta);
+	}
+	// Object::Update
+	{
+		nvtx3::scoped_range r{ "Object::Update" };
+		m_pObject_Manager->Update(fTimeDelta);
+	}
+	// Collision::Update
+	{
+		nvtx3::scoped_range r{ "Collision::Update" };
+		m_pCollision_Manager->Update(fTimeDelta);
+	}
+	// Object::Update_L
+	{
+		nvtx3::scoped_range r{ "Object::Update_L" };
+		m_pObject_Manager->Update_Late(fTimeDelta);
+	}
+
+	// Physics::Step
+	{
+		// 피직스 시뮬레이트
+		nvtx3::scoped_range r{ "Physics::Step" };
+		m_pPhysics_Module->StepPhysics(fTimeDelta);
+	}
 
 	// 메인카메라 업데이트
 	m_pCamera_Manager->Update_ViewMatrix();
