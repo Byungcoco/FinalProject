@@ -210,33 +210,6 @@ HRESULT CGenericUI::Bind_Action(DTO::EUIEvent EventType, DTO::EUIAction ActType,
 	return S_OK;
 }
 
-HRESULT CGenericUI::Remove_Action(DTO::EUIEvent EventType, DTO::EUIAction ActType)
-{
-	const size_t EventIndex = ENUM_TO_SZET(EventType);
-	if (EventIndex >= m_vecBindingActionData.size())
-		return E_FAIL;
-
-	_bool isRemoved = { FALSE };
-	for (auto iter = m_vecBindingActionData[EventIndex].begin(); iter != m_vecBindingActionData[EventIndex].end(); iter++)
-	{
-		if (iter->eAction == ActType)
-		{
-			m_vecBindingActionData[EventIndex].erase(iter);
-			isRemoved = TRUE;
-			break;
-		}
-	}
-	if (!isRemoved)
-	{
-		MSG_BOX("CToolUI::Remove_Action, No Action with Match strActionKey");
-		return E_FAIL;
-	}
-	m_vecBindingActions[EventIndex].clear();
-	if (FAILED(ReBind_Action()))
-		return E_FAIL;
-	return S_OK;
-}
-
 HRESULT CGenericUI::Excute_Action(DTO::EUIEvent EventType)
 {
 	if (nullptr == m_pActionForMe)
@@ -264,22 +237,6 @@ HRESULT CGenericUI::Excute_Specific_Action(DTO::EUIEvent EventType, DTO::EUIActi
 		index++;
 	}
 	return E_FAIL;
-}
-
-HRESULT CGenericUI::ReBind_Action()
-{
-	for (uint32_t i = 0; i < m_vecBindingActionData.size(); ++i)
-	{
-		m_vecBindingActions[i].clear();
-		for (auto& data : m_vecBindingActionData[i])
-		{
-			auto Func = m_pGameInstance->Get_UIAction_Registry()->Build_Action(data.eAction, data.Params);
-			if (!Func)
-				return E_FAIL;
-			m_vecBindingActions[i].push_back(std::move(Func));
-		}
-	}
-	return S_OK;
 }
 
 void CGenericUI::Delay_Queue(const _float fTimeDelta)

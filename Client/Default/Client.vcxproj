@@ -227,6 +227,7 @@
     <ClInclude Include="..\Public\State_Walk.h" />
     <ClInclude Include="..\Public\StaticModel.h" />
     <ClInclude Include="..\Public\UIAction_Client.h" />
+    <ClInclude Include="..\Public\UIButton_Component.h" />
     <ClInclude Include="..\Public\UITargetAction_Client.h" />
     <ClInclude Include="..\Public\UI_Manager.h" />
     <ClInclude Include="..\Public\Weapon.h" />

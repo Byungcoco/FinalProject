@@ -54,11 +54,9 @@ public:
 public:
 	HRESULT Bind_Action(const DTO::TUI_EventBindData& data);
 	HRESULT Bind_Action(DTO::EUIEvent EventType, DTO::EUIAction ActType, const json& params);
-	HRESULT Remove_Action(DTO::EUIEvent EventType, DTO::EUIAction ActType);
 	IUIActionForMe* Get_ActionForMe() const { return m_pActionForMe; }
 	HRESULT Excute_Action(DTO::EUIEvent EventType);
 	HRESULT Excute_Specific_Action(DTO::EUIEvent EventType, DTO::EUIAction eAction);
-	HRESULT ReBind_Action();
 
 	void Delay_Queue(const _float fTimeDelta);
 	void Push_DelayAction(const _float fDelay, std::function<void()>&& Func);
