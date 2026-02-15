@@ -5,14 +5,18 @@ NS_BEGIN(Engine)
 
 enum class E_PARTICLE_MOVESTATE
 {
-	NONE,
+	NONE = 0,
 	DROP,
 	RISE,
 	SPREAD,
 	STRAIGHT,
+	SPIRAL,
+	DNA
 };
 
 class CModel;
+class CComputeShader;
+class CGameObject;
 
 // 추후에 여기에 Random Seed flag 값 들어올 예정.
 
@@ -33,6 +37,9 @@ public:
 		_bool isLoop = { false };
 		_bool isRandomSeed = { false };
 		CModel*	pModel = { nullptr };
+		CGameObject* pOwner = { nullptr };
+		CComputeShader* pComputeShader = { nullptr };
+		_uint  EmissionFlagType = { 0 };
 	}PARTICLE_ORIGIN_DESC;
 protected:
 	CVIBuffer_Particle(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
@@ -46,20 +53,13 @@ public:
 	virtual void Render() override;
 	
 public:
-	virtual void Update_Simulation(Vec3 vLook, _float fTimeDelta, E_PARTICLE_MOVESTATE eType);
+	virtual void Update_Simulation(CComputeShader* ComputeShader, Vec3 vLook, _float fTImeDelta, _uint TimeFlag, E_PARTICLE_MOVESTATE eType);
 	virtual void Reset_Simulation();
-
-	// ======== 행동 패턴들 =========
-	virtual void Drop(_float fTimeDelta);
-	virtual void Rise(_float fTimeDelta);
-	virtual void Spread(_float fTimeDelta);
-
-	virtual void Straight(Vec3 vLook, _float fDT);
 
 public:
 	const PARTICLE_ORIGIN_DESC& Get_ParticleDesc() { return m_tParticleDesc; }
 	virtual void Set_ParticleDesc(const PARTICLE_ORIGIN_DESC& Desc) {}
-	virtual HRESULT Resize_InstanceBuffer(_uint iNumInstanceCount) { return S_OK; }
+	virtual HRESULT Resize_InstanceBuffer(const PARTICLE_ORIGIN_DESC& Desc) { return S_OK; }
 
 public:
 	virtual _uint   Get_InstanceCount() { return m_iInstanceCount; }

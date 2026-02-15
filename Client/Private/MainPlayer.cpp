@@ -1,22 +1,26 @@
 #include "pch.h"
 #include "MainPlayer.h"
 
+// components
 #include "Model.h"
-#include "CameraMan.h"
 #include "Collider.h"
 #include "Bounding_Sphere.h"
 #include "PlayerActionState.h"
 #include "ComboContainer.h"
-#include "CameraMan_Targeter.h"
 #include "PlayerControlContext.h"
 #include "StatComponent.h"
 #include "Navigation.h"
-#include "Ray.h"
 #include "Bone.h"
-#include "Body.h"
+
+// objects
+#include "CameraMan_Targeter.h"
 #include "Camera.h"
 #include "ColliderPart.h"
 #include "PhysicsCCT.h"
+#include "Ray.h"
+#include "CameraMan.h"
+#include "Body.h"
+#include "Weapon.h"
 
 #include "StateBase_Player.h"
 
@@ -25,7 +29,10 @@
 #include "State_Combo_Second.h"
 #include "State_Combo_Third.h"
 #include "State_Combo_Fourth.h"
+
+#include "State_MoonCombo.h"
 #pragma endregion
+
 #include "GameInstance.h"
 
 // Test
@@ -57,6 +64,8 @@ HRESULT CMainPlayer::Initialize(void* pArg)
     if (FAILED(Super::Initialize(pArg)))
         return E_FAIL;
 
+    Set_Name("Eun_bi");
+
     if (FAILED(Ready_Ability()))
         return E_FAIL;
 
@@ -68,7 +77,8 @@ HRESULT CMainPlayer::Initialize(void* pArg)
     tDesc.FKeys = CPlayerControlContext::KEYFLAGS::MOVE     | CPlayerControlContext::KEYFLAGS::JUMP
                 | CPlayerControlContext::KEYFLAGS::DASH     | CPlayerControlContext::KEYFLAGS::SPECIAL
                 | CPlayerControlContext::KEYFLAGS::COMBO    | CPlayerControlContext::KEYFLAGS::SKILL1
-                | CPlayerControlContext::KEYFLAGS::SKILL2   | CPlayerControlContext::KEYFLAGS::INTERACT;
+                | CPlayerControlContext::KEYFLAGS::SKILL2   | CPlayerControlContext::KEYFLAGS::INTERACT |
+                    CPlayerControlContext::KEYFLAGS::GUN;
     if (FAILED(Add_Component<CPlayerControlContext>(0 /*static*/, L"Prototype_Component_ControlContext_Player", &tDesc)))
         return E_FAIL;
 
@@ -79,6 +89,9 @@ HRESULT CMainPlayer::Initialize(void* pArg)
         return E_FAIL;
 
     if (FAILED(Ready_CCT()))
+        return E_FAIL;
+
+    if (FAILED(Ready_AttackStates()))
         return E_FAIL;
 
     return S_OK;
@@ -96,9 +109,9 @@ HRESULT CMainPlayer::Awake(const _uint iCurrentLevelID)
     if (FAILED(Get_Component<CControlContext>()->Awake(iCurrentLevelID)))
         return E_FAIL;
 
-    Get_Component<CTransform>()->Set_Info(TRANSFORM_INFO_STATE::POS, Vec3{ 18.f,20.f,19.f });
+    Get_Component<CTransform>()->Set_Info(TRANSFORM_INFO_STATE::POS, Vec3{ 18.f,30.f,19.f });
 
-    //Get_Component<CPhysicsCCT>()->Awake();
+    Get_Component<CPhysicsCCT>()->Awake();
 
     CImGui_ClientDebug::GetInstance()->Set_Player(this);
     return S_OK;
@@ -114,6 +127,7 @@ void CMainPlayer::Update_Priority(const _float fTimeDelta)
 void CMainPlayer::Update(const _float fTimeDelta)
 {
     Super::Update(fTimeDelta);
+
 }
 
 void CMainPlayer::Update_Late(const _float fTimeDelta)
@@ -150,20 +164,28 @@ HRESULT CMainPlayer::Render()
     return S_OK;
 }
 
-void CMainPlayer::OnCollision(_uint iMyColliderLayer, CCollider* pOther)
+void CMainPlayer::OnCollision(_uint iMyColliderLayer, CGameObject* pOther)
 {
 }
 
-void CMainPlayer::OnCollision_Enter(_uint iMyColliderLayer, CCollider* pOther)
+void CMainPlayer::OnCollision_Enter(_uint iMyColliderLayer, CGameObject* pOther)
 {
     ECollideLayer eMyLayer = static_cast<ECollideLayer>(iMyColliderLayer);
     // _bool bAttackHit = Try_AttackHit(eMyLayer, pOther);
 }
 
-void CMainPlayer::OnCollision_Exit(_uint iMyColliderLayer, CCollider* pOther)
+void CMainPlayer::OnCollision_Exit(_uint iMyColliderLayer, CGameObject* pOther)
 {
     // 만약 바닥과 충돌이 끝났다면
     //static_cast<CStateBase_Player*>(Get_Component<CPlayerActionState>()->Get_CurrentState())->Change_State(CStateBase_Player::STATEKEY::LOOPDONE);
+}
+
+void CMainPlayer::OnTrigger_Enter(_uint iMyColliderLayer, CGameObject* pOther)
+{
+}
+
+void CMainPlayer::OnTrigger_Exit(_uint iMyColliderLayer, CGameObject* pOther)
+{
 }
 
 #pragma region Legacy
@@ -397,16 +419,18 @@ HRESULT CMainPlayer::Ready_Ability()
 
 HRESULT CMainPlayer::Ready_Weapons()
 {
-    //// Weapon
-    //{
-    //    CWeapon::WEAPON_DESC weaponDesc = {};
-    //    weaponDesc.wstrModelPrototypeName = L"Prototype_Component_Model_Sword";
-    //    weaponDesc.pMatParent = &Get_Component<CTransform>()->Get_WorldMatrix();
-    //    weaponDesc.pMatHandSocket = &Get_Part<CBody>(Part::BODY)->Get_RightHandWeaponSocket()->Get_CombinedTransformMatrix();
-    //    weaponDesc.pMatSocket = &Get_Part<CBody>(Part::BODY)->Get_SwordSocket()->Get_CombinedTransformMatrix();
-    //    if (FAILED(Add_Part(Part::WEAPON, ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_GameObject_Part_Weapon", &weaponDesc)))
-    //        return E_FAIL;
-    //}
+    // Weapons
+    {
+        CWeapon::WEAPON_DESC weaponDesc     = {};
+        weaponDesc.wstrModelPrototypeName   = L"Prototype_Component_Model_MoonSword";
+        weaponDesc.pMatParent               = &Get_Component<CTransform>()->Get_WorldMatrix();
+        weaponDesc.pMatHandSocket           = &Get_Part<CBody>(Part::BODY)->Get_RightHandSocket()->Get_CombinedTransformMatrix();
+        weaponDesc.pMatSocket               = &Get_Part<CBody>(Part::BODY)->Get_WeaponSocket()->Get_BindPoseTransformMatrix();
+        weaponDesc.eModel                   = CWeapon::Weapon_ModelType::STATIC;
+        weaponDesc.bMianWeapon              = true;
+        if (FAILED(Add_Part(Part::SWORD, ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_GameObject_Part_Sword", &weaponDesc)))
+            return E_FAIL;
+    }
     //// LeftHand
     //{
     //    CColliderPart::COLLIDERPART_DESC colliderPartDesc = {};
@@ -572,6 +596,8 @@ HRESULT CMainPlayer::Ready_Ray()
 HRESULT CMainPlayer::Ready_CCT()
 {
     PHYSICSCCT_DESC desc;
+    desc.pOwner = this;
+    desc.bIsPlayer = true;
     desc.eType = EPhysicsCCTType::CAPSULE;
     desc.pOwnerMatrix = &Get_Component<CTransform>()->Get_WorldMatrix();
     desc.fRadius = 0.5f;
@@ -580,12 +606,51 @@ HRESULT CMainPlayer::Ready_CCT()
 
     PHYSICSMATERIAL_DESC mtrlDesc{};
     mtrlDesc.eMaterial = EPhysicsMaterial::PLAYER;
-
     desc.tMaterial = mtrlDesc;
-    desc.pOwner = this;
 
-   // if (FAILED(Add_Component<CPhysicsCCT>(0, L"Prototype_Component_Physics_CCT", &desc)))
-   //     return E_FAIL;
+    desc.eFilterLayer = PHYSICSFILTERGROUP::Enum::PLAYER;
+    desc.iFilterMask =
+        PHYSICSFILTERGROUP::Enum::MONSTER
+        | PHYSICSFILTERGROUP::Enum::MONSTER_ATTACK
+        | PHYSICSFILTERGROUP::Enum::MONSTER_ATTACK_PROJECTTILE
+        | PHYSICSFILTERGROUP::Enum::MONSTER_SKILL
+        | PHYSICSFILTERGROUP::Enum::MONSTER_SKILL_PROJECTTILE
+        | PHYSICSFILTERGROUP::Enum::MAP
+        | PHYSICSFILTERGROUP::Enum::OBJECT1
+        | PHYSICSFILTERGROUP::Enum::OBJECT2
+        | PHYSICSFILTERGROUP::Enum::TRIGGER_UI
+        | PHYSICSFILTERGROUP::Enum::TRIGGER_QUEST
+        | PHYSICSFILTERGROUP::Enum::TRIGGER_SPAWN
+        | PHYSICSFILTERGROUP::Enum::TRIGGER_DIRECTION;
+
+    if (FAILED(Add_Component<CPhysicsCCT>(0, L"Prototype_Component_Physics_CCT", &desc)))
+        return E_FAIL;
+
+    return S_OK;
+}
+
+HRESULT CMainPlayer::Ready_AttackStates()
+{
+    CPlayerActionState* pActionState = { nullptr };
+    CModel* pModel = Get_Part<CBody>(ENUM_TO_UINT(Part::BODY))->Get_Component<CModel>();
+    if (!pModel)
+        return E_FAIL;
+
+    if (!(pActionState = Get_Component<CPlayerActionState>()))
+        return E_FAIL;
+
+    CState_MoonCombo::MOONCOMBO_DESC tDesc = {};
+    tDesc.vCombo_CheckTimes = Vec4{ 0.9f,0.9f,1.5f,2.f };
+    tDesc.iSlideAnimIdx     = Get_AnimationIndex(L"Animation_PlayerMoon_Sword_SlideAttack");
+    tDesc.iFirstAnimIdx     = Get_AnimationIndex(L"Animation_PlayerMoon_Sword_RunAttack_01");
+    tDesc.iSecondAnimIdx    = Get_AnimationIndex(L"Animation_PlayerMoon_Sword_RunAttack_02");
+    tDesc.iThirdAnimIdx     = Get_AnimationIndex(L"Animation_PlayerMoon_Sword_RunAttack_03");
+    tDesc.iFourthAnimIdx    = Get_AnimationIndex(L"Animation_PlayerMoon_Sword_RunAttack_04");
+    tDesc.iEndStateIndex = ENUM_TO_UINT(State::END);
+
+
+    if (FAILED(pActionState->Add_State(ENUM_TO_UINT(State::COMBO), CState_MoonCombo::Create(pActionState, &tDesc))))
+        return E_FAIL;
 
     return S_OK;
 }

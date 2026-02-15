@@ -2,31 +2,34 @@
 #include "UIObject.h"
 #include "DataStruct_UI.h"
 
-NS_BEGIN(Engine)
-class IUIActionForMe;
-NS_END
-
 NS_BEGIN(Client)
 class CCanvas;
-class CUILayer;
-class CGenericUI final : public CUIObject
+class CUI_Manager;
+class CGenericUI abstract : public CUIObject
 {
 	using Super = CUIObject;
-	using ActionFunc = std::function<void(IUIActionForMe*)>;
-
 public:
 	typedef struct tagGenericUIDesc : public UIOBJECT_DESC
 	{
+		_string strName;
 		uint32_t iUIType;
 		uint32_t iRectTransformType;
 		_wstring wstrTextureTag;
 		uint32_t iTextureIndex;
-
+		uint32_t iComponentFlag;
+		_bool isUseColorTint;
+		Vec4 vColorTint;
+		int32_t iShaderPass;
+		int32_t iFillDir;
+		_float fDelay;
+		_float fAlpha;
+		int32_t iFlip;
 		CCanvas* pCanvasCache = { nullptr };
-		CUILayer* pLayerCache = { nullptr };
 	}GENERIC_UI_DESC;
 
-private:
+	enum class ETriggerEventType { HOVER_ENTER, HOVER_EXIT, PRESS_ENTER, PRESS_EXIT, END };
+
+protected :
 	CGenericUI(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
 	CGenericUI(const CGenericUI& rhs);
 	virtual ~CGenericUI() = default;
@@ -46,14 +49,9 @@ public:
 	_bool Calc_HitEvent();
 	void Acting_By_InteractState();
 
-public:
-	HRESULT Bind_Action(DTO::EUIEvent EventType, DTO::EUIAction ActType, const json& params);
-	HRESULT Remove_Action(DTO::EUIEvent EventType, DTO::EUIAction ActType);
-	IUIActionForMe* Get_ActionForMe() const { return m_pActionForMe; }
-	HRESULT Excute_Action(DTO::EUIEvent EventType);
-	HRESULT ReBind_Action();
+	virtual void OnUIEvent(ETriggerEventType eEvent, CGenericUI* pSender);
 
-private:
+protected:
 	HRESULT Ready_Components(GENERIC_UI_DESC* pDesc);
 	HRESULT Bind_ShaderResources();
 
@@ -63,27 +61,33 @@ public:
 	void Set_TextureIndex(_uint index) { m_iTextureIndex = index; }
 	const _string& Get_Tag() { return m_strName; }
 
-private:
+protected:
+	CUI_Manager* m_pUIManager = { nullptr };	
+	uint32_t m_iLevelID = {};
+
+protected:
 	ERectTransform m_eRectTransformType = { ERectTransform::C };
-	_wstring m_wstrTextureTag = {};
-	uint32_t m_iTextureIndex = {};
-	Vec3 m_vRectPos = {};
-	Vec3 m_vRenderPos = {};
-	RECT m_tRenderRect = {};
-	CCanvas* m_pParentCanvasCache = { nullptr };
-	CUILayer* m_pParentLayerCache = { nullptr };
+	_wstring m_wstrTextureTag			= {};
+	uint32_t m_iTextureIndex			= {};
+	Vec3 m_vRectPos						= {};
+	Vec3 m_vRenderPos					= {};
+	RECT m_tRenderRect					= {};
+	CCanvas* m_pParentCanvasCache		= { nullptr };
+	Vec3 m_vMoveOffset					= {};
+	uint32_t m_iComponentFlag			= {};
+	uint32_t m_iOwnerType				= {};
 
-	IUIActionForMe* m_pActionForMe = { nullptr };
-
-	/* 액션들을 이벤트 갯수만큼 정적으로 할당 사실상 vector<ActionFunc>[] 이거임 */
-	array< vector<ActionFunc>, ENUM_TO_UINT(DTO::EUIEvent::END)> m_vecBindingActions;
-	array< vector<DTO::TUI_EventBindData>, ENUM_TO_UINT(DTO::EUIEvent::END)> m_vecBindingActionData;
+	// Shader Bind Values
+	_bool m_isUseColorTint				= {false};
+	Vec4 m_vColorTint					= {};
+	_float m_fAlpha_Ratio				= {};
+	_float m_fProgress_Ratio			= {1.f};
+	int32_t m_iFillDir					= {};
+	_float m_fDelay						= {};
+	int32_t m_iFlip						= { ENUM_TO_UINT(EUIFlip::NONE) };
 
 public:
-	static CGenericUI* Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
-	CGameObject* Clone(void* pArg);
 	virtual void Free()override;
-
 };
 
 NS_END

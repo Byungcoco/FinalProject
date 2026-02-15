@@ -3,6 +3,16 @@
 #include "Client_Defines.h"
 #include "DataStruct_Effect.h"
 
+NS_BEGIN(Engine)
+
+class CModel;
+class CTexture;
+class CShader;
+class CComputeShader;
+class CTransform;
+
+NS_END
+
 NS_BEGIN(Client)
 
 class CEffectObject :
@@ -10,78 +20,12 @@ class CEffectObject :
 {
 public:
     using Super = CPartObject;
-    using _uint2 = struct { _uint x; _uint y; };
 
-public:
     typedef struct tagEffectObjectDesc : public Super::PARTOBJ_DESC
     {
-        // ========     이펙트 타입   =========
-        DTO::E_EffectSystemType eEffectSystemType = DTO::E_EffectSystemType::Particle;
-        DTO::E_PARTICLETYPE eEffectParticleType = DTO::E_PARTICLETYPE::PARTICLE;
-        DTO::E_EFFECTTYPE eEffectType = DTO::E_EFFECTTYPE::Particle;
-        DTO::E_SHAPETYPE _Effect_ShapeType = DTO::E_SHAPETYPE::SPREAD;
-
-        // ========  이펙트 Material 설정   ===========
-        wstring     _Effect_Model_Tag = {};
-        wstring     _Effect_DiffuseTexture_Tag = {};
-        wstring     _Effect_NoiseTexture_Tag = {};
-        wstring     _Effect_MaskingTexture_Tag = {};
-        wstring     _Effect_GradationTexture_Tag = {};
-        wstring     _Effect_TrailTexture_Tag = {};
-        wstring     _Effect_NormalTexture_Tag = {};
-
-        wstring     _Effect_Shader_Path = {};
-        wstring     _Effect_Shader_Tag = {};
-        int         _Effect_ShaderPass = { 0 };
-
-        // =======   이펙트 스크롤 Value   ===========
-        Vec2     _Effect_ScrollSpeed = { 0.f, 0.f };
-
-        // ========   이펙트 왜곡 Scale Value   ==========
-        Vec2     _Effect_DistortionScale = { 0.f, 0.f };
-
-        // ==========   이펙트 Sacle Value   ==============
-        Vec3     _Effect_StartScale = { 1.f, 1.f, 1.f };
-        Vec3     _Effect_EndScale = { 1.f, 1.f, 1.f };
-
-        // =========   이펙트 Color Value   ===============
-        Vec4     _Effect_Color = { 1.f, 0.f, 0.f, 1.f };
-        float    _Effect_DiscardValue = { 0.05f };
-
-        // =========   이펙트 Sprite 사용 여부    ============
-        bool        _Effect_bUseSprite = {};
-        _uint2      _Effect_TileCount = {};
-        bool        _Effect_bPlayAnim = { false };
-        _float      _Effect_AnimSpeed = { 1.0f };
-        _uint       m_iCurSpriteNumber = {};
-
-
-        // =========   이펙트 Emission 전용   =============
-        _float      _Effect_RateOverTime = {};
-        _float      _Effect_RateOverDistance = {};
-
-        // ========   이펙트 파티클 전용   ============
-        Vec2                _Effect_ParticleSize = { 0.05f, 0.15f };
-        _float              _Effect_Duration = { 5.f };
-        _bool               _Effect_Looping = { true };
-        _bool               _Effect_IsRandomSeed = { true };
-        _float              _Effect_StartDelay = { 0.f };
-        _float              _Effect_LifeTime = { 5.f };
-        _float              _Effect_PlayBackSpeed = { 1.f };
-        _float              _Effect_StartSpeed = { 1.f };   // Particle에 영향을 주는 스피드 [개별 배속]
-        int                 _Effect_MaxParticle = { 100 };
-
-        // ========  이펙트 Radius  ==========
-        Vec3                _Effect_Range = { 1.f, 1.f, 1.f };
-
-        // ========  이펙트 Texture Flag  =======
-        _uint               _Effect_TextureFlag = {};
-        _uint               _Effect_RenderFlag = {};
-        _uint               _Effect_SamplerStateFlag = {};
-        _uint               _Effect_TextureRotationFlag = {};
-        _uint               _Effect_TextureOperatorFlag = {};
+        DTO::TEFFECT_PartsData Data;
     }Effect_Desc;
-
+  
 protected:
     CEffectObject(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
     explicit CEffectObject(const CEffectObject& rhs);
@@ -89,6 +33,13 @@ protected:
 
     virtual HRESULT Initialize_Prototype() override;
     virtual HRESULT Initialize(void* pArg) override;
+
+    HRESULT EffectDesc_Initialize(void* pArg);
+    virtual HRESULT Ready_Component(void* pArg);
+    virtual HRESULT Ready_Component_Shader();
+    virtual HRESULT Ready_Component_Texture();
+    virtual HRESULT Ready_Component_Buffer(void* pArg);
+    virtual HRESULT Ready_Component_Model(void* pArg);
 
 public:
     virtual HRESULT Awake(const _uint iCurrentLevelID) override;
@@ -102,39 +53,28 @@ public:
     virtual void Set_Dead(const wstring& wstrLayerTag) override;
 
 public:
-    //  ==========  초기 Component 설정  ================
-    HRESULT EffectDesc_Initialize(void* pArg);
-    HRESULT Component_Setting(void* pArg);
-
-    void Model_Setting(const wstring& Name);
-    void Shader_Setting(const wstring& Name);
-    void Texture_Setting(const wstring& Name);
-    void Buffer_Setting();
-
-    void Particle_Setting();
+        // 외부 호출 함수
+    virtual HRESULT Spawn_FromPool(void* pArg);
+    virtual HRESULT Despawn_FromPool();
 
 private:
     //  ==========  Shader Binding Setting  =============
     HRESULT Bind_ShaderResource();
-
-    void Bind_ShaderResource_Particles();
-    void Bind_ShaderResource_Meshes();
-    void Bind_ShaderResource_Trails();
-
 private:
+    // ====== 계산함수 ====== 
     void TimeCalculate(const _float fDT);
-public:
-    void TimeReset(Effect_Desc Desc);
+    float Sample_GravityCurve(const vector<DTO::Gravity_CurveKey>& vecVurve, float fLifeRatio);
+    void Update_Gravity_Force(float fLifeRatio); // 중력 계산하기.
+    float Sample_RotationCurve(const vector<DTO::Rotation_CurveKey>& vecCurve, float fLifeRatio);
+    void Update_Rotation_Lerp(float fDT, float fRatio);
+    void Update_UV_Scroll_Curve(float fRatio);
 
 public:
-    const string& Get_Name() const { return m_szName; }
-    void Set_Name(const string& Name) { m_szName = Name; }
-
+    void TimeFlagRequest(_uint iTimeFlag);
 
 public:
-    const DTO::E_EffectSystemType& Get_EffectType() { return m_tEffectDesc.eEffectSystemType; }
-    const Effect_Desc& Get_EffectDesc() { return m_tEffectDesc; }
-    void Set_EffectDesc(const Effect_Desc& Desc);
+    const DTO::E_EffectSystemType& Get_EffectType() { return (DTO::E_EffectSystemType)m_tEffectDesc.Data.eEffectSystemType; }
+    const DTO::TEFFECT_PartsData& Get_EffectDesc() { return m_tEffectDesc.Data; }
 
 public:
     static CEffectObject* Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
@@ -149,12 +89,22 @@ private:
     //  ========== 스크롤 OffSet ========
     Vec2      m_vScrollOffset = { 0.f, 0.f };
     _float    m_fTimeAccumulation = 0.f;
-    _bool     m_bIsStarted = { false }; 
+    _bool     m_bIsStarted = { false }; // 타임 딜레이 지났는지에 대한 bool값
+
+    //  ========= 회전 속도 ===========
+    Vec3       m_vAccumulatedRotation = { 0.f, 0.f, 0.f };
 
     //  ========== 현재 이펙트 sprite Number  ===========
 private:
     _bool              m_bIsTool = { false };
-    string             m_szName = {};
+
+private:
+    // 캐싱 용도
+   CModel*                   m_pModel = { nullptr };
+   CTexture*                 m_pTexture = { nullptr };
+   CShader*                  m_pShader = { nullptr };
+   CComputeShader*           m_pComputeShader = { nullptr };
+   CTransform*               m_pTransform = { nullptr };
 };
 
 NS_END

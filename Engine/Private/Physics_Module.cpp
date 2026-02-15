@@ -2,12 +2,15 @@
 
 #include "GameInstance.h"
 
+#include "EngineConsole.h"
+
 #include "Physics_Module.h"
 #include "Physics_ResourceManager.h"
 #include "Physics_Utils.h"
 #include "Physics_ShapeFactory.h"
 #include "Physics_CCTManager.h"
 #include "Physics_ActorFactory.h"
+#include "Physics_FilterEventCallback.h"
 
 CPhysics_Module::CPhysics_Module(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
 	: m_pDevice(pDevice)
@@ -48,13 +51,16 @@ HRESULT CPhysics_Module::Initialize()
 	/// Create CUDA context ///
 	///////////////////////////
 	{
-		PxCudaContextManagerDesc cudaContextManagerDesc{};
-		m_pCudaContextManager = PxCreateCudaContextManager(*m_pFoundation, cudaContextManagerDesc, PxGetProfilerCallback());
-		if (m_pCudaContextManager)
-		{
-			if (!m_pCudaContextManager->contextIsValid())
-				PX_RELEASE(m_pCudaContextManager);
-		}
+		//PxCudaContextManagerDesc cudaContextManagerDesc{};
+		//m_pCudaContextManager = PxCreateCudaContextManager(*m_pFoundation, cudaContextManagerDesc, PxGetProfilerCallback());
+		//if (m_pCudaContextManager)
+		//{
+		//	if (!m_pCudaContextManager->contextIsValid())
+		//	{
+		//		if (m_pCudaContextManager)
+		//			PX_RELEASE(m_pCudaContextManager);
+		//	}
+		//}
 	}
 
 	///////////////////
@@ -115,9 +121,10 @@ HRESULT CPhysics_Module::Initialize()
 		{
 			// Default Setting
 			//sceneDesc.filterShader = PxDefaultSimulationFilterShader;
-
 			sceneDesc.filterShader = FilterShader;
-			//sceneDesc.filterCallback;
+			
+			m_pFilterEventCallback = CPhysics_FilterEventCallback::Create();
+			sceneDesc.simulationEventCallback = m_pFilterEventCallback;
 		}
 
 		if (!(m_pScene = m_pPhysics->createScene(sceneDesc)))
@@ -187,6 +194,8 @@ void CPhysics_Module::StepPhysics(_float fTimeDelta)
 #ifdef _DEBUG
 	if (KEY_BUTTON_DOWN(DIK_F1))
 		m_bEnabledDebugDraw = !m_bEnabledDebugDraw;
+	if (KEY_BUTTON_DOWN(DIK_F2))
+		m_pUtils->SetMeshDebugState();
 #endif // _DEBUG
 }
 
@@ -205,6 +214,26 @@ Matrix CPhysics_Module::PxTransformToXMMatrix(PxTransform pxTransform)
 	return m_pUtils->PxTransformToXMMatrix(pxTransform);
 }
 
+PxQuat CPhysics_Module::GetPureRotation(Matrix mat)
+{
+	return m_pUtils->GetPureRotation(mat);
+}
+
+PxVec3 CPhysics_Module::GetPureScale(Matrix mat)
+{
+	return m_pUtils->GetPureScale(mat);
+}
+
+_bool CPhysics_Module::Execute_Overlap(PxGeometry& shape, PxTransform& transform, OUT PxOverlapBuffer& hit, PxQueryFilterData& filterData, PxQueryFilterCallback* filterCallback)
+{
+	return m_pUtils->Execute_Overlap(shape, transform, hit, filterData, filterCallback);
+}
+
+CPhysics_QueryFilterCallback* CPhysics_Module::GetQueryFilterCallback()
+{
+	return m_pUtils->GetQueryFilterCallback();
+}
+
 #ifdef _DEBUG
 HRESULT CPhysics_Module::Render(PxRigidActor* pActor, XMVECTOR color)
 {
@@ -212,6 +241,13 @@ HRESULT CPhysics_Module::Render(PxRigidActor* pActor, XMVECTOR color)
 		return S_OK;
 
 	return m_pUtils->Render(pActor, color);
+}
+HRESULT CPhysics_Module::Render(const PxGeometry& geom, const PxTransform& transform, XMVECTOR color)
+{
+	if (!m_bEnabledDebugDraw)
+		return S_OK;
+
+	return m_pUtils->Render(geom, transform, color);
 }
 #endif // _DEBUG
 
@@ -249,7 +285,12 @@ vector<PxShape*> CPhysics_Module::GetMeshShape(PHYSICSCOLLIDER_DESC* pDesc)
 	return m_pShapeFactory->GetMeshShape(pDesc);
 }
 
-PxRigidActor* CPhysics_Module::GetActor(PHYSICSRIGIDBODY_DESC* rigidBodyDesc, PHYSICSCOLLIDER_DESC* colliderDesc, vector<PxShape*>& shapes)
+vector<PxShape*> CPhysics_Module::CopyShapes(vector<PxShape*>& shapes)
+{
+	return m_pShapeFactory->CopyShapes(shapes);
+}
+
+vector<PxRigidActor*> CPhysics_Module::GetActor(PHYSICSRIGIDBODY_DESC* rigidBodyDesc, PHYSICSCOLLIDER_DESC* colliderDesc, vector<PxShape*>& shapes)
 {
 	return m_pActorFactory->GetActor(rigidBodyDesc, colliderDesc, shapes);
 }
@@ -266,37 +307,94 @@ PxFilterFlags CPhysics_Module::FilterShader(
 {
 	if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1))
 	{
-		pairFlags = PxPairFlag::eTRIGGER_DEFAULT;
+		if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
+		{
+			pairFlags = PxPairFlag::eTRIGGER_DEFAULT;
+			return PxFilterFlag::eDEFAULT;
+		}
+		return PxFilterFlag::eSUPPRESS;
+	}
+
+	if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
+	{
+		pairFlags = PxPairFlag::eCONTACT_DEFAULT
+			| PxPairFlag::eNOTIFY_TOUCH_FOUND
+			| PxPairFlag::eNOTIFY_TOUCH_LOST
+			| PxPairFlag::eNOTIFY_TOUCH_PERSISTS;
 		return PxFilterFlag::eDEFAULT;
 	}
 
-	pairFlags = PxPairFlag::eCONTACT_DEFAULT;
+	return PxFilterFlag::eSUPPRESS;
+}
 
-	if ((filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1))
-		pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
+void CPhysics_Module::Check_Leak()
+{
+	_uint staticActorCount = { 0 };
+	_uint dynamicActorCount = { 0 };
 
-	return PxFilterFlag::eDEFAULT;
+	if (m_pScene)
+	{
+		staticActorCount = m_pScene->getNbActors(PxActorTypeFlag::eRIGID_STATIC);
+		dynamicActorCount = m_pScene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC);
+	}
+
+	_uint triMeshCount = m_pPhysics->getNbTriangleMeshes();
+	_uint convexMeshCount = m_pPhysics->getNbConvexMeshes();
+
+	wstring logMsg = L" [PhysX Leak Check] \n";
+	logMsg += L"Static Actors: " + std::to_wstring(staticActorCount) + L"\n";
+	logMsg += L"Dynamic Actors: " + std::to_wstring(dynamicActorCount) + L"\n";
+
+	logMsg += L"Tri Meshes: " + std::to_wstring(triMeshCount) + L"\n";
+	logMsg += L"Convex Meshes: " + std::to_wstring(convexMeshCount) + L"\n";
+
+	CLOG_INFO(logMsg);
+
+	OutputDebugStringW(L"----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- \r ");
+	OutputDebugStringW(L"                                                                            PhysX Leak Checker \r ");
+	OutputDebugStringW(L"----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- \r ");
+
+	OutputDebugStringW(logMsg.c_str());
+
+	OutputDebugStringW(L"----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- \r ");
+	OutputDebugStringW(L"                                                                          PhysX Leak Checker END \r ");
+	OutputDebugStringW(L"----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- \r ");
 }
 
 void CPhysics_Module::ClearPhysics()
 {
-	PX_RELEASE(m_pScene);
-	PX_RELEASE(m_pDispatcher);
-	PX_RELEASE(m_pPhysics);
+	if (m_pScene)
+		PX_RELEASE(m_pScene);
+
+	Check_Leak();
+
+	if (m_pFilterEventCallback)
+		Safe_Release(m_pFilterEventCallback);
+
+	if (m_pDispatcher)
+		PX_RELEASE(m_pDispatcher);
+
+	if (m_pPhysics)
+		PX_RELEASE(m_pPhysics);
 
 #ifdef _DEBUG
 	if (m_pPvd)
 	{
 		PxPvdTransport* transport = m_pPvd->getTransport();
 		PX_RELEASE(m_pPvd);
-		PX_RELEASE(transport);
+
+		if (transport)
+			PX_RELEASE(transport);
 	}
 #endif // _DEBUG
 
 	PxCloseExtensions();
 
-	PX_RELEASE(m_pCudaContextManager);
-	PX_RELEASE(m_pFoundation);
+	if (m_pCudaContextManager)
+		PX_RELEASE(m_pCudaContextManager);
+
+	if (m_pFoundation)
+		PX_RELEASE(m_pFoundation);
 }
 
 CPhysics_Module* CPhysics_Module::Create(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
@@ -317,8 +415,10 @@ void CPhysics_Module::Free()
 	Safe_Release(m_pCCTManager);
 	Safe_Release(m_pActorFactory);
 	Safe_Release(m_pShapeFactory);
-	Safe_Release(m_pResourceManager);
 	Safe_Release(m_pUtils);
+	
+	PX_RELEASE(m_pScene);
+	Safe_Release(m_pResourceManager);
 
 	ClearPhysics();
 

@@ -28,9 +28,11 @@ public:
 	virtual void Update(_float fTimeDelta) override;
 	virtual void Update_Late(_float fTimeDelta) override;
 	virtual void Ready_Before_Render(_float fTimeDelta) override;
-	virtual void OnCollision(_uint iMyColliderLayer, CCollider* pOther) override;
-	virtual void OnCollision_Enter(_uint iMyColliderLayer, CCollider* pOther) override;
-	virtual void OnCollision_Exit(_uint iMyColliderLayer, CCollider* pOther) override;
+	virtual void OnCollision(_uint iMyColliderLayer, CGameObject* pOther) override;
+	virtual void OnCollision_Enter(_uint iMyColliderLayer, CGameObject* pOther) override;
+	virtual void OnCollision_Exit(_uint iMyColliderLayer, CGameObject* pOther) override;
+	virtual void OnTrigger_Enter(_uint iMyColliderLayer, CGameObject* pOther) override;
+	virtual void OnTrigger_Exit(_uint iMyColliderLayer, CGameObject* pOther) override;
 	virtual _bool On_Hit(_uint iCollideMyLayer, ATTACK_DESC* pDesc, CGameObject* pOther) override;
 	virtual HRESULT Render() override;
 public:
@@ -43,8 +45,8 @@ public:
 	CBone* Get_NeckBone();
 	CBone* Get_Spine1Bone();
 	//CBone* Get_SpineBone();
-	//CBone* Get_SwordSocket();
-	//CBone* Get_RightHandWeaponSocket();
+	CBone* Get_WeaponSocket();
+	CBone* Get_RightHandSocket();
 	//CBone* Get_LeftHandSocket();
 	//CBone* Get_RightHandSocket();
 	//CBone* Get_LeftFootSocket();
@@ -54,7 +56,9 @@ public:
 	//CBone* Get_EffectMouseSocket();
 private:
 	HRESULT Ready_Components(BODY_DESC *pDesc);
+	HRESULT Ready_AttackOverlap();
 	HRESULT Bind_ShaderResources();
+	HRESULT Ready_ComputeShader();
 private:
 	_int m_iHead_Index = { 0 };
 	_int m_iNeck_Index = { 0 };

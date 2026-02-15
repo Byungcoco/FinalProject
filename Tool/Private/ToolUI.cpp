@@ -8,13 +8,10 @@
 #include "Texture.h"
 
 #include "ToolCanvas.h"
-#include "ToolLayer.h"
 #include "ImGui_UIManager.h"
 #include "ImGui_ToolManager.h"
-#include "UIAction_Tool.h"
-
-#include "UIAction_Registry.h"
 #include "GameInstance.h"
+
 CToolUI::CToolUI(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
 	:CUIObject(pDevice, pDeviceContext)
 {
@@ -35,28 +32,57 @@ HRESULT CToolUI::Initialize_Prototype()
 HRESULT CToolUI::Initialize(void* pArg)
 {
 	TOOLUI_DESC* pDesc = static_cast<TOOLUI_DESC*>(pArg);
-	m_strName = pDesc->strName;
+	m_eClassType			= pDesc->eClassType;
+	m_strName				= pDesc->strName;
+	m_strCanvasName			= pDesc->strCanvasName;
+	m_iCanvasIndex			= pDesc->iCanvasIndex;
+	m_wstrTextureTag		= Engine_Utils::ToWString(pDesc->strInitTextureTag);
+	m_eRectTransformType	= static_cast<ERectTransform>(pDesc->iRectTransformType);
+	m_pCacheCanvas			= pDesc->pCacheCanvas;
+	m_isUseColorTint		= pDesc->isUseColorTint;
+	m_vColorTint			= pDesc->vColorTint;
+	m_iShaderPass			= pDesc->iShaderPass;
+	m_iFillDir				= pDesc->iFillDir;
+	m_fDelay				= pDesc->fDelay;
+	m_eSubClassType			= pDesc->eSubClassType;
+	m_iFlip					= pDesc->iFlip;
+	m_fTestAlpha			= pDesc->fAlpha;
 
-	m_strCanvasName = pDesc->strCanvasName;
-	m_iCanvasIndex = pDesc->iCanvasIndex;
-	m_strLayerName = pDesc->strLayerName;
-	m_iLayerIndex = pDesc->iLayerIndex;
-
-	m_wstrTextureTag = Engine_Utils::ToWString(pDesc->strInitTextureTag);
-	m_iTextureIndex = pDesc->iInitTextureIndex;
-
-	m_eRectTransformType = static_cast<ERectTransform>(pDesc->iRectTransformType);
-
-	m_fHeight = pDesc->fHeight;
-	m_fWidth = pDesc->fWidth;
-	m_fX = pDesc->fX;
-	m_fY = pDesc->fY;
-	m_fZ = pDesc->fZ;
+	// Local Values
+	m_iIndex = pDesc->iIndex;
+	if (m_eClassType == DTO::EUIClassType::UI_TEXT)
+	{
+		m_tUITextData			= pDesc->tTextData;
+		m_wstrText_TextData		= Engine_Utils::ToWString(m_tUITextData.strText);
+		m_vFontColor_TextData	= m_tUITextData.vFontColor;
+		m_fScale_TextData		= m_tUITextData.fScale;
+		m_fRotate_TextData		= m_tUITextData.fRotate;
+		m_strFontName_TextData	= m_tUITextData.strFontTag;
+	}
+	if (m_eClassType == DTO::EUIClassType::TRIGGER)
+	{
+		m_tUITriggerData			= pDesc->tTriggerData;
+		m_vecHoverEnterTriggerCanvas	= m_tUITriggerData.vecHoverEnterTriggerCanvas;
+		m_vecHoverEnterTriggerUI		= m_tUITriggerData.vecHoverEnterTriggerUI;
+		m_vecHoverExitTriggerCanvas		= m_tUITriggerData.vecHoverExitTriggerCanvas;
+		m_vecHoverExitTriggerUI			= m_tUITriggerData.vecHoverExitTriggerUI;
+		m_vecPressEnterTriggerCanvas	= m_tUITriggerData.vecPressEnterTriggerCanvas;
+		m_vecPressEnterTriggerUI		= m_tUITriggerData.vecPressEnterTriggerUI;
+		m_vecPressExitTriggerCanvas		= m_tUITriggerData.vecPressExitTriggerCanvas;
+		m_vecPressExitTriggerUI			= m_tUITriggerData.vecPressExitTriggerUI;
+	}
+	if (m_eClassType == DTO::EUIClassType::DYNAMIC_IMAGE)
+	{
+		m_tDImageData			= pDesc->tDImageData;
+		m_eDImageSubClassType	= m_tDImageData.eDISubClassType;
+	}
 
 	if (FAILED(Super::Initialize(pArg)))
 		return E_FAIL;
     if (FAILED(Ready_Components(pDesc)))
         return E_FAIL;
+	if (FAILED(Get_Component<CTexture>()->Add_DefaultTexture(m_wstrTextureTag, 0)))
+		return E_FAIL;
 
     return S_OK;
 }
@@ -66,15 +92,10 @@ HRESULT CToolUI::Awake(const _uint iCurrentLevelID)
 	if (FAILED(Super::Awake(iCurrentLevelID)))
         return E_FAIL;
 
-	m_pBatch = new PrimitiveBatch<VertexPositionColor>(m_pDeviceContext);
-	m_pEffect = new BasicEffect(m_pDevice);
+	m_pBatch	= new PrimitiveBatch<VertexPositionColor>(m_pDeviceContext);
+	m_pEffect	= new BasicEffect(m_pDevice);
 	m_pEffect->SetVertexColorEnabled(true);
-
-	m_pActionForMe = CUIAction_Tool::Create(this);
-	m_iInteractState = static_cast<uint32_t>(DTO::EUIEvent_Flag::NONE);
-	if (nullptr == m_pActionForMe)
-		return E_FAIL;
-
+	m_iInteractState = static_cast<uint32_t>(EUIEvent_Flag::NONE);
     return S_OK;
 }
 
@@ -83,12 +104,14 @@ void CToolUI::Update_Priority(const _float fTimeDelta)
 	Set_Size(m_fWidth, m_fHeight);
 	SetUp_RectTransform_Position();
 	SetUp_Visible();
-	m_isHitTest = FALSE;
 	Super::Update_Priority(fTimeDelta);
 }
 
 void CToolUI::Update(const _float fTimeDelta)
 {
+	if (m_isDisable)
+		return;
+
 	Super::Update(fTimeDelta);
 }
 
@@ -112,12 +135,12 @@ HRESULT CToolUI::Render()
 	if (FAILED(Super::Render()))
 		return E_FAIL;
 
-    if (FAILED(Bind_ShaderResources()))
-        return E_FAIL;
+	if (FAILED(Bind_ShaderResources()))
+		return E_FAIL;
 
-    Get_Component<CShader>()->Apply();
-    Get_Component<CVIBuffer>()->Bind_Resource();
-    Get_Component<CVIBuffer>()->Render();
+	Get_Component<CShader>()->Apply();
+	Get_Component<CVIBuffer>()->Bind_Resource();
+	Get_Component<CVIBuffer>()->Render();
 
 	if (m_isHitTest)
 	{
@@ -154,103 +177,30 @@ HRESULT CToolUI::Render()
 		m_pBatch->End();
 	}
 
+	m_isHitTest = FALSE;
+
     return S_OK;
 }
 
 _bool CToolUI::Calc_HitEvent()
 {
+	if (m_isDisable)
+		return FALSE;
+
 	if (::PtInRect(&m_tRenderRect, CImGui_ToolManager::GetInstance()->Get_CalculatedMousePos_Point()))
 		return TRUE;
+
 	return FALSE;
-}
-
-HRESULT CToolUI::Bind_Action(DTO::EUIEvent EventType, DTO::EUIAction ActType, const json& params)
-{
-	const size_t index = ENUM_TO_SZET(EventType);
-	if (index >= m_vecBindingActions.size())
-		return E_FAIL;
-
-	DTO::TUI_EventBindData Desc = {};
-	Desc.strOwnerTag = m_strName;
-	Desc.strActionKey = DTO::UIFunctypeToString(ActType);
-	Desc.eEvent = EventType;
-	Desc.Params = params;
-	m_vecBindingActionData[index].push_back(Desc);
-	auto Func = m_pGameInstance->Get_UIAction_Registry()->Build_Action(ActType, params);
-	if (!Func)
-		return E_FAIL;
-	m_vecBindingActions[index].push_back(std::move(Func));
-	return S_OK;
-}
-
-HRESULT CToolUI::ReBind_Action()
-{
-	for (uint32_t i = 0; i < m_vecBindingActionData.size(); ++i)
-	{
-		m_vecBindingActions[i].clear();
-		for (auto& data : m_vecBindingActionData[i])
-		{
-			auto Func = m_pGameInstance->Get_UIAction_Registry()->Build_Action(DTO::StringToUIFunctype( data.strActionKey),data.Params);
-			if (!Func)
-				return E_FAIL;
-			m_vecBindingActions[i].push_back(std::move(Func));
-		}
-	}
-	return S_OK;
-}
-
-HRESULT CToolUI::Remove_Action(DTO::EUIEvent EventType, DTO::EUIAction ActType)
-{
-	const size_t EventIndex = ENUM_TO_SZET(EventType);
-	if (EventIndex >= m_vecBindingActionData.size())
-		return E_FAIL;
-
-	_bool isRemoved = { FALSE };
-	for (auto iter = m_vecBindingActionData[EventIndex].begin(); iter != m_vecBindingActionData[EventIndex].end(); iter++)
-	{
-		if (DTO::StringToUIFunctype(iter->strActionKey) == ActType)
-		{
-			m_vecBindingActionData[EventIndex].erase(iter);
-			isRemoved = TRUE;
-			break;
-		}
-	}
-	if (!isRemoved)
-	{
-		MSG_BOX("CToolUI::Remove_Action, No Action with Match strActionKey");
-		return E_FAIL;
-	}
-	m_vecBindingActions[EventIndex].clear();
-		if (FAILED(ReBind_Action()))
-			return E_FAIL;
-	return S_OK;
 }
 
 HRESULT CToolUI::Ready_Components(TOOLUI_DESC* pDesc)
 { 
-	if (FAILED(Add_Component<CTexture>(ENUM_TO_UINT(ELevelType::UI), m_wstrTextureTag, pDesc)))
-        return E_FAIL;
-
-    if (FAILED(Add_Component<CShader>(0, L"Prototype_Component_Shader_VtxPosTex", pDesc)))
+	if (FAILED(Add_Component<CTexture>(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Texture_Empty", pDesc)))
         return E_FAIL;
 
     if (FAILED(Add_Component<CVIBuffer_Rect_Tex>(0, L"Prototype_Component_VIBuffer_Rect_Tex", pDesc)))
         return E_FAIL;
 
-	return S_OK;
-}
-
-HRESULT CToolUI::Excute_Action(DTO::EUIEvent EventType)
-{
-	if (nullptr == m_pActionForMe)
-		return E_FAIL;
-
-	size_t index = ENUM_TO_SZET(EventType);
-	if (index >= m_vecBindingActions.size())
-		return E_FAIL;
-
-	for (auto& fn : m_vecBindingActions[index])
-		fn(m_pActionForMe);
 	return S_OK;
 }
 
@@ -261,119 +211,230 @@ HRESULT CToolUI::Bind_ShaderResources()
     if (FAILED(Get_Component<CTransform>()->Bind_ShaderResource(pShader)))
         return E_FAIL;
 
-    if (FAILED(Get_Component<CTexture>()->Bind_ShaderResource(pShader, m_iTextureIndex)))
+    if (FAILED(Get_Component<CTexture>()->Bind_ShaderResourceBuffer(pShader)))
         return E_FAIL;
 
+	pShader->Set_Pass(m_iShaderPass);
+ 	if (FAILED(Get_Component<CTexture>()->Bind_ShaderResourceBuffer(pShader)))
+		return E_FAIL;
+	if (FAILED(pShader->Get_Variable("g_iFlip")->SetRawValue(&m_iFlip, 0, sizeof(int32_t))))
+		return E_FAIL;
+
+	const int32_t isColor = m_isUseColorTint ? 1 : 0;
+	if (FAILED(pShader->Get_Variable("g_iColor")->SetRawValue(&isColor, 0, sizeof(int32_t))))
+		return E_FAIL;
+	if (FAILED(pShader->Get_Variable("g_vColorTint")->SetRawValue(&m_vColorTint, 0, sizeof(Vec4))))
+		return E_FAIL;
+	if (FAILED(pShader->Get_Variable("g_fAlphaRatio")->SetRawValue(&m_fTestAlpha, 0, sizeof(_float))))
+		return E_FAIL;
+	if (FAILED(pShader->Get_Variable("g_iFillDir")->SetRawValue(&m_iFillDir, 0, sizeof(int32_t))))
+		return E_FAIL;
+	if (FAILED(pShader->Get_Variable("g_fProgressRatio")->SetRawValue(&m_fTestProgress, 0, sizeof(_float))))
+		return E_FAIL;
+
+	if(m_eClassType == DTO::EUIClassType::UI_TEXT)
+	{
+		Vec2 fontPos = Vec2{ m_vRenderPos.x, m_vRenderPos.y };
+		if (FAILED(m_pGameInstance->Draw_Text(Engine_Utils::ToWString(m_strFontName_TextData), m_wstrText_TextData.c_str(), fontPos, m_vFontColor_TextData, m_fRotate_TextData,m_fScale_TextData)))
+			return E_FAIL;
+	}
     return S_OK;
 }
 
 void CToolUI::SetUp_RectTransform_Position()
 {
-	auto* pCanvas = CImGui_UIManager::GetInstance()->Safe_Access_Canvas(m_iCanvasIndex);
-	if (nullptr == pCanvas)
+	if (nullptr == m_pCacheCanvas)
 		return;
 
-	Vec2 initPos = {};
+	Vec2 initPos = Calc_RectTransformPosition();
+
+	m_vRenderPos = Vec3{ initPos.x + m_vMoveOffset.x + m_fX, initPos.y + m_vMoveOffset.y + m_fY, m_fZ };
+	Move_Position(m_vRenderPos.x , m_vRenderPos.y , m_vRenderPos.z);
+
+	m_tRenderRect.left		= static_cast<LONG>(initPos.x + m_vMoveOffset.x + m_fX - (m_fWidth * 0.5f));
+	m_tRenderRect.right		= static_cast<LONG>(initPos.x + m_vMoveOffset.x + m_fX + (m_fWidth * 0.5f));
+	m_tRenderRect.top		= static_cast<LONG>(initPos.y + m_vMoveOffset.y + m_fY - (m_fHeight * 0.5f));
+	m_tRenderRect.bottom	= static_cast<LONG>(initPos.y + m_vMoveOffset.y + m_fY + (m_fHeight * 0.5f));
+}
+
+Vec2 CToolUI::Calc_RectTransformPosition()
+{
 	switch (m_eRectTransformType)
 	{
-	case Tool::ERectTransform::LT:initPos = pCanvas->Get_LT();break;
-	case Tool::ERectTransform::CT:initPos = pCanvas->Get_CT();break;
-	case Tool::ERectTransform::RT:initPos = pCanvas->Get_RT();break;
-	case Tool::ERectTransform::LC:initPos = pCanvas->Get_LC();break;
-	case Tool::ERectTransform::C: initPos = pCanvas->Get_C();break;
-	case Tool::ERectTransform::RC:initPos = pCanvas->Get_RC();break;
-	case Tool::ERectTransform::LB:initPos = pCanvas->Get_LB();break;
-	case Tool::ERectTransform::CB:initPos = pCanvas->Get_CB();break;
-	case Tool::ERectTransform::RB:initPos = pCanvas->Get_RB();break;
-	default:initPos = pCanvas->Get_C();break;
+	case Tool::ERectTransform::LT:return m_pCacheCanvas->Get_LT();
+	case Tool::ERectTransform::CT:return m_pCacheCanvas->Get_CT();
+	case Tool::ERectTransform::RT:return m_pCacheCanvas->Get_RT();
+	case Tool::ERectTransform::LC:return m_pCacheCanvas->Get_LC();
+	case Tool::ERectTransform::C: return m_pCacheCanvas->Get_C();
+	case Tool::ERectTransform::RC:return m_pCacheCanvas->Get_RC();
+	case Tool::ERectTransform::LB:return m_pCacheCanvas->Get_LB();
+	case Tool::ERectTransform::CB:return m_pCacheCanvas->Get_CB();
+	case Tool::ERectTransform::RB:return m_pCacheCanvas->Get_RB();
+	default:return m_pCacheCanvas->Get_C();
 	}
-
-	Move_Position(initPos.x + m_fX, initPos.y + m_fY, m_fZ);
-	m_vRenderPos = Vec3{ initPos.x + m_fX, initPos.y + m_fY, m_fZ };
-
-	m_tRenderRect.left		= static_cast<LONG>(initPos.x + m_fX - (m_fWidth * 0.5f));
-	m_tRenderRect.right		= static_cast<LONG>(initPos.x + m_fX + (m_fWidth * 0.5f));
-	m_tRenderRect.top		= static_cast<LONG>(initPos.y + m_fY - (m_fHeight * 0.5f));
-	m_tRenderRect.bottom	= static_cast<LONG>(initPos.y + m_fY + (m_fHeight * 0.5f));
 }
 
 void CToolUI::SetUp_Visible()
 {
-	CToolLayer* pLayer = CImGui_UIManager::GetInstance()->Safe_Access_Layer(m_iLayerIndex);
-	if (nullptr == pLayer)
-		return;
-
-	if(!m_isVisible)
-	m_isVisible = pLayer->Get_isVisible();
 }
 
 void CToolUI::Acting_About_State()
 {
-	if(m_iInteractState == DTO::EUIEvent_Flag::NONE)
-		Excute_Action(DTO::EUIEvent::NONE);
+	if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::INVOKED))
+	{
+	}
+
+	if (m_iInteractState == EUIEvent_Flag::NONE)
+	{
+	}
 	else
 	{
-		if (Engine_Utils::Has_Flag(m_iInteractState, DTO::EUIEvent_Flag::PRESS_ENTER))
+		if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::PRESS_ENTER))
 		{
-			Excute_Action(DTO::EUIEvent::PRESS_ENTER);
 		}
-		else if (Engine_Utils::Has_Flag(m_iInteractState, DTO::EUIEvent_Flag::PRESS_EXIT))
+		else if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::PRESS_EXIT))
 		{
-			Excute_Action(DTO::EUIEvent::PRESS_EXIT);
+			CImGui_UIManager::GetInstance()->Safe_Change_UI(m_iIndex);
 		}
-		else if (Engine_Utils::Has_Flag(m_iInteractState, DTO::EUIEvent_Flag::HOVER_ENTER))
+		else if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::HOVER_ENTER))
 		{
-			Excute_Action(DTO::EUIEvent::HOVER_ENTER);
 		}
-		else if (Engine_Utils::Has_Flag(m_iInteractState, DTO::EUIEvent_Flag::HOVER_EXIT))
+		else if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::HOVER_EXIT))
 		{
-			Excute_Action(DTO::EUIEvent::HOVER_EXIT);
 		}
 
-		if (Engine_Utils::Has_Flag(m_iInteractState, DTO::EUIEvent_Flag::PRESSING))
+		if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::PRESSING))
 		{
-			Excute_Action(DTO::EUIEvent::PRESSING);
 		}
-		else if (Engine_Utils::Has_Flag(m_iInteractState, DTO::EUIEvent_Flag::HOVERING))
+		else if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::HOVERING))
 		{
-			Excute_Action(DTO::EUIEvent::HOVERING);
 		}
 	}
 }
 
 void CToolUI::Sync_Data()
 {
-	m_tUIData.strTag = m_strName;
-	m_tUIData.strCanvasName = m_strCanvasName;
-	m_tUIData.strLayerName = m_strLayerName;
-	m_tUIData.iRectTransformType = static_cast<uint32_t>( m_eRectTransformType);
-	m_tUIData.fWidth = m_fWidth;
-	m_tUIData.fHeight = m_fHeight;
-	m_tUIData.fPosX = m_fX;
-	m_tUIData.fPosY = m_fY;
-	m_tUIData.fPosZ = m_fZ;
-	m_tUIData.strTextureTag = Engine_Utils::ToString(m_wstrTextureTag);
-	m_tUIData.iTextureIndex = m_iTextureIndex;
+	// UI Object Values
+	m_tUIData.fWidth				= m_fWidth;
+	m_tUIData.fHeight				= m_fHeight;
+	m_tUIData.fPosX					= m_fX;
+	m_tUIData.fPosY					= m_fY;
+	m_tUIData.fPosZ					= m_fZ;
+	m_tUIData.isVisible				= m_isVisible;
+
+	// Tool UI Values
+	m_tUIData.strTag				= m_strName;
+	m_tUIData.strCanvasName			= m_strCanvasName;
+	m_tUIData.iRectTransformType	= static_cast<uint32_t>( m_eRectTransformType);
+	m_tUIData.strTextureTag			= Engine_Utils::ToString(m_wstrTextureTag);
+	m_tUIData.eClassType			= m_eClassType;
+	m_tUIData.iComponentFlag		= m_iComponentFlag;
+	m_tUIData.eSubClassType 		= m_eSubClassType;
+	m_tUIData.isUseColorTint 		= m_isUseColorTint;
+	m_tUIData.vColorTint 			= m_vColorTint;
+	m_tUIData.iShaderPass			= m_iShaderPass;
+	m_tUIData.fDelay				= m_fDelay;
+	m_tUIData.iFlip					= m_iFlip;
+	m_tUIData.fAlphaRatio			= m_fTestAlpha;
+	m_tUIData.iFillDir				= m_iFillDir;
+
+	if (m_eClassType == DTO::EUIClassType::UI_TEXT)
+	{
+		Sync_TextData();
+	}
+	else if (m_eClassType == DTO::EUIClassType::TRIGGER)
+	{
+		Sync_TriggerData();
+	}
+	else if (m_eClassType == DTO::EUIClassType::BUTTON_TRIGGER)
+	{
+		Sync_ButtonTriggerData();
+	}
+	else if (m_eClassType == DTO::EUIClassType::DYNAMIC_IMAGE)
+	{
+		Sync_DImageData();
+	}
 }
 
-vector<DTO::TUI_EventBindData>* CToolUI::Safe_Access_EventData(DTO::EUIEvent EventType)
+void CToolUI::Sync_TextData()
 {
-	size_t index = ENUM_TO_SZET(EventType);
-
-	if (index >= m_vecBindingActionData.size() || m_vecBindingActionData.empty())
-		return nullptr;
-
-	return &m_vecBindingActionData[index];
+	m_tUITextData.strTag		= m_strName + "_TextData";
+	m_tUITextData.strOwnerName	= m_strName;
+	m_tUITextData.strText		= Engine_Utils::ToString(m_wstrText_TextData);
+	m_tUITextData.vFontColor	= m_vFontColor_TextData;
+	m_tUITextData.fRotate		= m_fRotate_TextData;
+	m_tUITextData.strFontTag	= m_strFontName_TextData;
+	m_tUITextData.fScale		= m_fScale_TextData;
 }
 
-array<vector<DTO::TUI_EventBindData>, ENUM_TO_UINT(DTO::EUIEvent::END)>* CToolUI::Safe_Access_AllEventData()
+void CToolUI::Sync_TriggerData()
 {
-	return &m_vecBindingActionData;
+	m_tUITriggerData.strTag							= m_strName + "_TriggerData";
+	m_tUITriggerData.strOwnerName					= m_strName;
+	m_tUITriggerData.vecHoverEnterTriggerCanvas		= m_vecHoverEnterTriggerCanvas;
+	m_tUITriggerData.vecHoverEnterTriggerUI			= m_vecHoverEnterTriggerUI;
+	m_tUITriggerData.vecHoverExitTriggerCanvas		= m_vecHoverExitTriggerCanvas;
+	m_tUITriggerData.vecHoverExitTriggerUI			= m_vecHoverExitTriggerUI;
+	m_tUITriggerData.vecPressEnterTriggerCanvas		= m_vecPressEnterTriggerCanvas;
+	m_tUITriggerData.vecPressEnterTriggerUI			= m_vecPressEnterTriggerUI;
+	m_tUITriggerData.vecPressExitTriggerCanvas		= m_vecPressExitTriggerCanvas;
+	m_tUITriggerData.vecPressExitTriggerUI			= m_vecPressExitTriggerUI;
 }
 
-CToolUI* CToolUI::Create(EToolObjectType eType, ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
+void CToolUI::Sync_ButtonTriggerData()
 {
-	CToolUI* pInstance = new CToolUI(pDevice, pDeviceContext);
+	m_tUIButtonTriggerData.strTag			= m_strName + "_Button_TriggerData";
+	m_tUIButtonTriggerData.strOwnerName		= m_strName;
+	m_tUIButtonTriggerData.strKeyMapping	= m_strKeyMapping;
+	m_tUIButtonTriggerData.vecTriggerCanvas = m_vecButtonTriggerCanvas;
+	m_tUIButtonTriggerData.vecTriggerUI		= m_vecButtonTriggerUI;
+}
+
+void CToolUI::Sync_DImageData()
+{
+	m_tDImageData.strTag			= m_strName + "_DImageData";
+	m_tDImageData.strOwnerName		= m_strName;
+	m_tDImageData.eDISubClassType	= m_eDImageSubClassType;
+}
+
+_bool CToolUI::Add_Tag(vector<_string>& vec, const _string& str)
+{
+	if (str == "")
+		return false;
+	if (std::find(vec.begin(), vec.end(), str) != vec.end())
+		return false;
+	vec.push_back(str);
+	return true;
+}
+
+_bool CToolUI::Remove_Tag(vector<_string>& vec, const _string& str)
+{
+	if (str == "")
+		return false;
+
+	auto it = std::find(vec.begin(), vec.end(), str);
+	if (it == vec.end())
+		return false;
+	vec.erase(it);
+	return true;
+}
+
+HRESULT CToolUI::Request_Change_Texture()
+{
+	if (FAILED(Get_Component<CTexture>()->Add_DefaultTexture(m_wstrTextureTag, 0)))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+void CToolUI::Request_Chnage_ShaderPass(uint32_t pass)
+{
+	Get_Component<CShader>()->Set_Pass(pass);
+}
+
+CToolUI* CToolUI::Create(EToolObjectType eType, ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
+{
+	CToolUI* pInstance = new CToolUI(pDevice, pContext);
 	if (FAILED(pInstance->Initialize_Prototype()))
 	{
 		MSG_BOX("CToolUI::Create, Create Failed");
@@ -398,7 +459,7 @@ void CToolUI::Free()
 	Safe_Delete(m_pBatch);
 	Safe_Delete(m_pEffect);
 	Safe_Release(m_pInputLayout);
-	Safe_Release(m_pActionForMe);
 	Super::Free();
 }
+
 

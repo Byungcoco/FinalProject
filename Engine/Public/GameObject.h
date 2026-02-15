@@ -35,13 +35,16 @@ public:
 	virtual void Update(const _float fTimeDelta);
 	virtual void Update_Late(const _float fTimeDelta);
 	virtual void Ready_Before_Render(const _float fTimeDelta);
-	virtual void OnCollision(_uint iMyColliderLayer, CCollider* pOther) {}
-	virtual void OnCollision_Enter(_uint iMyColliderLayer, CCollider* pOther) {}
-	virtual void OnCollision_Exit(_uint iMyColliderLayer, CCollider* pOther) {}
+	virtual void OnCollision(_uint iMyColliderLayer, CGameObject* pOther) {}
+	virtual void OnCollision_Enter(_uint iMyColliderLayer, CGameObject* pOther) {}
+	virtual void OnCollision_Exit(_uint iMyColliderLayer, CGameObject* pOther) {}
+	virtual void OnTrigger_Enter(_uint iMyColliderLayer, CGameObject* pOther) {}
+	virtual void OnTrigger_Exit(_uint iMyColliderLayer, CGameObject* pOther) {}
 	virtual _bool Picking(OUT Vec3& vOut) { return false; }
 	virtual HRESULT Render();
 	virtual HRESULT Spawn_FromPool(void* pArg) { return S_OK; }
 	virtual HRESULT Despawn_FromPool() { return S_OK; }
+	virtual _bool IntersectWithFrustrum(BoundingFrustum* pFrustrum) { return true; }
 	virtual _bool On_Hit(_uint iCollideMyLayer, ATTACK_DESC* pDesc, CGameObject* pOther) { return true; }
 	virtual void Try_AttackHit() {};
 	template<typename T>
@@ -79,9 +82,15 @@ public:
 	CObjectPool* Get_OwnerPool() { return m_pOwnerPool; }
 	void Set_OwnerPool(CObjectPool* pOwnerPool) { m_pOwnerPool = pOwnerPool; }
 	virtual _bool Export_Data(DTO::ECategory eCategory, CDataDocumentBase* pDocument) { return false; }
+	void Set_Flag(_uint iFlag, _bool bActive);
 public:
 	void Set_Name(const string& strName);
 	void Set_Name(const wstring& wstrName);
+
+	string Get_Name();
+	wstring Get_WName();
+
+	uint64 Get_ID() { return m_iObjectID; }
 private:
 	void Update_Script_Components(const _float fTimeDelta);
 	void Safe_Release_Component();
@@ -95,8 +104,9 @@ protected:
 	ID3D11Device* m_pDevice = { nullptr };
 	ID3D11DeviceContext* m_pDeviceContext = { nullptr };
 	class CGameInstance *m_pGameInstance = { nullptr };
-	uint64 m_iObjectID = { 0 };
+	_uint m_iObjectID = { 0 };
 	string m_strName = { "" };
+	SHADER_OBJECTINFO_DESC m_tObjectInfoDesc{};
 private:
 	_bool m_bClone = { false };
 	array<CComponent*, g_ComponentTypeCount> m_Components;

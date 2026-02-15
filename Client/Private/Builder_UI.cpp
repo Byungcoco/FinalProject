@@ -1,10 +1,17 @@
 #include "pch.h"
 #include "Builder_UI.h"
-
 #include "Canvas.h"
-#include "UILayer.h"
 #include "GenericUI.h"
+#include "UIProgress_Bar.h"
+#include "UIJust_Image.h"
+#include "UIText.h"
+#include "UITrigger.h"
 
+#include "UISkill_BG.h"
+#include "UIMini_Map.h"
+#include "UIHover_Image.h"
+
+#include"UI_Manager.h"
 #include "GameInstance.h"
 
 CBuilder_UI::CBuilder_UI(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, _uint iLevelID)
@@ -44,13 +51,35 @@ HRESULT CBuilder_UI::Build(const CDataDocumentBase& document)
 		}
 	}
 
-	// For. Layer
+	// For. TextData
 	{
-		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::LAYER));
+		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::UI_TEXT));
 		for (const auto& pObjectData : vecDataList)
 		{
-			const auto* pDto = static_cast<const Engine::CUI_Layer_DTO*>(pObjectData);
-			if (FAILED(Create_LayerDTO(pDto->Get_Data())))
+			const auto* pDto = static_cast<const Engine::CUI_Text_DTO*>(pObjectData);
+			if (FAILED(Create_TextDTO(pDto->Get_Data())))
+				return E_FAIL;
+		}
+	}
+
+	// For. Trigger
+	{
+		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::TRIGGER));
+		for (const auto& pObjectData : vecDataList)
+		{
+			const auto* pDto = static_cast<const Engine::CUI_Trigger_DTO*>(pObjectData);
+			if (FAILED(Create_TriggerDTO(pDto->Get_Data())))
+				return E_FAIL;
+		}
+	}
+
+	// For. DImage
+	{
+		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::DYNAMIC_IMAGE));
+		for (const auto& pObjectData : vecDataList)
+		{
+			const auto* pDto = static_cast<const Engine::CUI_DImage_DTO*>(pObjectData);
+			if (FAILED(Create_DImageDTO(pDto->Get_Data())))
 				return E_FAIL;
 		}
 	}
@@ -66,17 +95,26 @@ HRESULT CBuilder_UI::Build(const CDataDocumentBase& document)
 		}
 	}
 
-	// For. Event
-	{
-		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::EVENT));
-		for (const auto& pObjectData : vecDataList)
-		{
-			const auto* pDto = static_cast<const Engine::CUI_EventBindData_DTO*>(pObjectData);
-			if (FAILED(Create_EventBindDataDTO(pDto->Get_Data())))
-				return E_FAIL;
-		}
-	}
+	if (FAILED(CUI_Manager::GetInstance()->Swap_MapCanvasCache(m_iLevelID, std::move(m_MapCanvasCache))))
+		return E_FAIL;
+	if (FAILED(CUI_Manager::GetInstance()->Swap_MapGenericUICache(m_iLevelID, std::move(m_pMapUICache))))
+		return E_FAIL;
 
+	m_MapTextDataCache.clear();
+	m_MapTriggerDataCache.clear();
+
+	for (auto* pUI : m_vecTriggerUIs)
+	{
+		auto* pTriggerUI = dynamic_cast<CUITrigger*>(pUI);
+		if (nullptr == pTriggerUI)
+			continue;
+
+		if (FAILED(pTriggerUI->Bind_Cache()))
+			return E_FAIL;
+	}
+	m_vecTriggerUIs.clear();
+
+	CUI_Manager::GetInstance()->Request_SortUI();
 	return S_OK;
 }
 
@@ -90,11 +128,9 @@ HRESULT CBuilder_UI::Create_CanvasDTO(const DTO::TUI_CanvasData& data)
 	Desc.strName = data.strTag;
 	m_vAspect.x = (_float)g_iWinSizeX / (_float)data.iEditorSizeX;
 	m_vAspect.y = (_float)g_iWinSizeY / (_float)data.iEditorSizeY;
-
 	Desc.fX = data.fPosX * m_vAspect.x;
 	Desc.fY = data.fPosY * m_vAspect.y;
 	Desc.fZ = data.fPosZ;
-
 	Desc.fWidth = m_vViewportSIze.x;
 	Desc.fHeight = m_vViewportSIze.y;
 
@@ -109,32 +145,9 @@ HRESULT CBuilder_UI::Create_CanvasDTO(const DTO::TUI_CanvasData& data)
 
 	m_MapCanvasCache.emplace(data.strTag, pCanvas);
 
-	return S_OK;
-}
-
-HRESULT CBuilder_UI::Create_LayerDTO(const DTO::TUI_LayerData& data)
-{
-	if (data.eType != DTO::EUIType::LAYER)
+	if (FAILED(CUI_Manager::GetInstance()->Add_VecCanvasCache(m_iLevelID, pCanvas)))
 		return E_FAIL;
 
-	CUILayer::UILAYER_DESC Desc = {};
-	Desc.isInitVisible = TRUE;
-	auto iter = m_MapCanvasCache.find(data.strCanvasName);
-	if (iter == m_MapCanvasCache.end())
-		return E_FAIL;
-
-	Desc.pCanvasCache = iter->second;
-	const _wstring wstrLayerTag = Engine_Utils::ToWString(iter->second->Get_Name()) + L"_Layer";
-	CGameObject* pResult = m_pGameInstance->Add_GameObject(m_iLevelID, L"Prototype_UI_UILayer", m_iLevelID, wstrLayerTag, &Desc);
-	if (pResult == nullptr)
-		return E_FAIL;
-
-	auto* pLayer = dynamic_cast<CUILayer*>(pResult);
-	if (nullptr == pLayer)
-		return E_FAIL;
-
-	iter->second->Get_UILayerVector()->push_back(pLayer);
-	m_MapLayerCache.emplace(data.strTag, pLayer);
 	return S_OK;
 }
 
@@ -143,51 +156,184 @@ HRESULT CBuilder_UI::Create_GenericUIDTO(const DTO::TUI_GenericUIData& data)
 	if (data.eType != DTO::EUIType::GENERICUI)
 		return E_FAIL;
 
-	CGenericUI::GENERIC_UI_DESC Desc = {};
-	Desc.iRectTransformType = data.iRectTransformType;
-	Desc.fWidth = data.fWidth * m_vAspect.x;
-	Desc.fHeight = data.fHeight * m_vAspect.y;
-	Desc.fX = data.fPosX * m_vAspect.x;
-	Desc.fY = data.fPosY * m_vAspect.y;
-	Desc.fZ = data.fPosZ;
-	Desc.wstrTextureTag = L"Prototype_Component_UI_Texture";
-	Desc.iTextureIndex = data.iTextureIndex;
-	Desc.isAlpha = TRUE;
 	auto iter = m_MapCanvasCache.find(data.strCanvasName);
 	if (iter == m_MapCanvasCache.end())
 		return E_FAIL;
 
-	const _wstring wstrLayerTag = Engine_Utils::ToWString(iter->second->Get_Name()) + L"_Layer";
-	CGameObject* pResult = m_pGameInstance->Add_GameObject(m_iLevelID, L"Prototype_UI_GenericUI", m_iLevelID, wstrLayerTag, &Desc);
+	if (FAILED(Register_Class(data.eClassType, data, iter->second)))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CBuilder_UI::Create_TextDTO(const DTO::TUI_TextData& data)
+{
+	if (data.eType != DTO::EUIType::UI_TEXT)
+		return E_FAIL;
+
+	m_MapTextDataCache.emplace(data.strOwnerName, data);
+	return S_OK;
+}
+
+HRESULT CBuilder_UI::Create_TriggerDTO(const DTO::TUI_TriggerData& data)
+{
+	if (data.eType != DTO::EUIType::TRIGGER)
+		return E_FAIL;
+
+	m_MapTriggerDataCache.emplace(data.strOwnerName, data);
+	return S_OK;
+}
+
+HRESULT CBuilder_UI::Create_DImageDTO(const DTO::TUI_DImageData& data)
+{
+	if (data.eType != DTO::EUIType::DYNAMIC_IMAGE)
+		return E_FAIL;
+
+	m_MapDImageDataCache.emplace(data.strOwnerName, data);
+	return S_OK;
+}
+
+HRESULT CBuilder_UI::Register_Class(DTO::EUIClassType eClassType, const DTO::TUI_GenericUIData& data, CCanvas* pCanvas)
+{
+	if (nullptr == pCanvas)
+		return E_FAIL;
+
+	CGenericUI::GENERIC_UI_DESC DefaultDesc = Make_DefaultInfo(data, pCanvas);
+	const _wstring wstrLayerTag = Engine_Utils::ToWString(pCanvas->Get_Name()) + L"_Layer";
+	const _wstring wstrProtoTag = L"Prototype_UI_" + Engine_Utils::ToWString(DTO::UIClassTypeToString(eClassType));
+
+	CGameObject* pResult = nullptr;
+
+	if (eClassType == DTO::EUIClassType::PROGRESS_BAR)
+	{
+		CUIProgress_Bar::PROGRESS_BAR_DESC ProgressDesc = {};
+		static_cast<CGenericUI::GENERIC_UI_DESC&>(ProgressDesc) = DefaultDesc;
+		ProgressDesc.eOwner = data.eSubClassType;
+		pResult = m_pGameInstance->Add_GameObject(m_iLevelID, wstrProtoTag, m_iLevelID, wstrLayerTag, &ProgressDesc);
+	}
+	else if (eClassType == DTO::EUIClassType::UI_TEXT)
+	{
+		CUIText::UI_TEXT_DESC TextDesc = {};
+		static_cast<CGenericUI::GENERIC_UI_DESC&>(TextDesc) = DefaultDesc;
+		TextDesc.eOwner = data.eSubClassType;
+		auto iter = m_MapTextDataCache.find(data.strTag);
+		if (iter == m_MapTextDataCache.end())
+			return E_FAIL;
+		TextDesc.wstrFontTag = Engine_Utils::ToWString(iter->second.strFontTag);
+		TextDesc.wstrText = Engine_Utils::ToWString( iter->second.strText);
+		TextDesc.vFontColor = iter->second.vFontColor;
+		TextDesc.fRotate = iter->second.fRotate;
+		TextDesc.fScale = iter->second.fScale * m_vAspect.x;
+
+		pResult = m_pGameInstance->Add_GameObject(m_iLevelID, wstrProtoTag, m_iLevelID, wstrLayerTag, &TextDesc);
+	}
+	else if (eClassType == DTO::EUIClassType::JUST_IMAGE)
+	{
+		CUIJust_Image::JUST_IMAGE_DESC JustImageDesc = {};
+		static_cast<CGenericUI::GENERIC_UI_DESC&>(JustImageDesc) = DefaultDesc;
+		pResult = m_pGameInstance->Add_GameObject(m_iLevelID, wstrProtoTag, m_iLevelID, wstrLayerTag, &JustImageDesc);
+	}
+	else if (eClassType == DTO::EUIClassType::TRIGGER)
+	{
+		CUITrigger::UI_TRIGGER_DESC TriggerDesc = {};
+		static_cast<CGenericUI::GENERIC_UI_DESC&>(TriggerDesc) = DefaultDesc;
+		TriggerDesc.eOwner = data.eSubClassType;
+		auto iter = m_MapTriggerDataCache.find(data.strTag);
+		if (iter == m_MapTriggerDataCache.end())
+			return E_FAIL;
+		TriggerDesc.tTriggerData = std::move(iter->second);
+		m_MapTriggerDataCache.erase(iter);	
+
+		pResult = m_pGameInstance->Add_GameObject(m_iLevelID, wstrProtoTag, m_iLevelID, wstrLayerTag, &TriggerDesc);
+		if (nullptr == pResult)
+			return E_FAIL;
+
+		auto* pTriggerUI = dynamic_cast<CGenericUI*>(pResult);
+		if (nullptr == pTriggerUI)
+			return E_FAIL;
+
+		m_vecTriggerUIs.push_back(pTriggerUI);
+	}
+	else if (eClassType == DTO::EUIClassType::DYNAMIC_IMAGE)
+	{
+		auto iter = m_MapDImageDataCache.find(data.strTag);
+		if (iter == m_MapDImageDataCache.end())
+			return E_FAIL;
+
+		const auto Type = iter->second.eDISubClassType;
+
+		const _bool isPlayerSkill	= (Type >= DTO::EUIDImageSubClassType::PLAYER_SKILL_BEGIN &&	Type <= DTO::EUIDImageSubClassType::PLAYER_SKILL_END);
+		const _bool isMiniMap		= (Type >= DTO::EUIDImageSubClassType::MINIMAP_BEGIN &&	Type <= DTO::EUIDImageSubClassType::MINIMAP_END);
+		const _bool isHoverIcon		= (Type >= DTO::EUIDImageSubClassType::HOVER_POPUP_BEGIN && Type <= DTO::EUIDImageSubClassType::HOVER_POPUP_END);
+
+		if (isPlayerSkill)
+		{
+			CUISkill_BG::SKILL_BG_DESC SkillBGDesc = {};
+			static_cast<CGenericUI::GENERIC_UI_DESC&>(SkillBGDesc) = DefaultDesc;
+			SkillBGDesc.eSubClassType = Type;
+			pResult = m_pGameInstance->Add_GameObject(m_iLevelID, L"Prototype_UI_SkillBG", m_iLevelID, wstrLayerTag, &SkillBGDesc);
+		}
+		else if (isMiniMap)
+		{
+			CUIMini_Map::MINIMAP_DESC SkillBGDesc = {};
+			static_cast<CGenericUI::GENERIC_UI_DESC&>(SkillBGDesc) = DefaultDesc;
+			SkillBGDesc.eSubClassType = Type;
+			pResult = m_pGameInstance->Add_GameObject(m_iLevelID, L"Prototype_UI_MiniMap", m_iLevelID, wstrLayerTag, &SkillBGDesc);
+		}
+		else if (isHoverIcon)
+		{
+			CUIHover_Image::HOVER_IMAGE_DESC HoverImageDesc = {};
+			static_cast<CGenericUI::GENERIC_UI_DESC&>(HoverImageDesc) = DefaultDesc;
+			HoverImageDesc.eSubClassType = Type;
+			pResult = m_pGameInstance->Add_GameObject(m_iLevelID, L"Prototype_UI_HoverImage", m_iLevelID, wstrLayerTag, &HoverImageDesc);
+		}
+	}
+	else
+	{
+		pResult = m_pGameInstance->Add_GameObject(m_iLevelID, wstrProtoTag, m_iLevelID, wstrLayerTag, &DefaultDesc);
+	}
+
 	if (pResult == nullptr)
 		return E_FAIL;
-	
+
 	auto* pUI = dynamic_cast<CGenericUI*>(pResult);
 	if (nullptr == pUI)
 		return E_FAIL;
 
-	auto Layeriter = m_MapLayerCache.find(data.strLayerName);
-	if (Layeriter == m_MapLayerCache.end())
+	pCanvas->Get_UIVector()->push_back(pUI);
+	m_pMapUICache.emplace(data.strTag, pUI);
+
+	if (FAILED(CUI_Manager::GetInstance()->Add_VecGenericUICache(m_iLevelID, pUI)))
 		return E_FAIL;
 
-	Layeriter->second->Get_UIVector()->push_back(pUI);
-	m_pMapUICache.emplace(data.strTag, pUI);
 	return S_OK;
 }
 
-HRESULT CBuilder_UI::Create_EventBindDataDTO(const DTO::TUI_EventBindData& data)
+CGenericUI::GENERIC_UI_DESC CBuilder_UI::Make_DefaultInfo(const DTO::TUI_GenericUIData& data, CCanvas* pCanvas)
 {
-	if (data.eType != DTO::EUIType::EVENT)
-		return E_FAIL;
+	CGenericUI::GENERIC_UI_DESC Desc = {};
+	Desc.strName				= data.strTag;
+	Desc.iLevelIndex			= m_iLevelID;
+	Desc.iRectTransformType		= data.iRectTransformType;
+	Desc.fWidth					= data.fWidth * m_vAspect.x;
+	Desc.fHeight				= data.fHeight * m_vAspect.x;
+	Desc.fX						= data.fPosX * m_vAspect.x;
+	Desc.fY						= data.fPosY * m_vAspect.y;
+	Desc.fZ						= data.fPosZ;
+	Desc.wstrTextureTag			= Engine_Utils::ToWString(data.strTextureTag);
+	Desc.isAlpha				= TRUE;
+	Desc.isInitVisible			= data.isVisible;
+	Desc.pCanvasCache			= pCanvas;
+	Desc.iComponentFlag			= data.iComponentFlag;
+	Desc.isUseColorTint			= data.isUseColorTint;
+	Desc.vColorTint				= data.vColorTint;
+	Desc.iShaderPass			= data.iShaderPass;
+	Desc.fDelay					= data.fDelay;
+	Desc.iFillDir				= data.iFillDir;
+	Desc.fAlpha					= data.fAlphaRatio;
+	Desc.iFlip					= data.iFlip;
 
-	auto iter = m_pMapUICache.find(data.strOwnerTag);
-	if (iter == m_pMapUICache.end())
-		return E_FAIL;
-
-	if (FAILED(iter->second->Bind_Action(data.eEvent, DTO::StringToUIFunctype(data.strActionKey), data.Params)))
-		return E_FAIL;
-
-	return S_OK;
+	return Desc;
 }
 
 CBuilder_UI* CBuilder_UI::Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, _uint iLevelID)

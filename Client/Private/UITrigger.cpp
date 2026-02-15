@@ -1,0 +1,255 @@
+#include "pch.h"
+#include "UITrigger.h"
+#include "Client_Defines.h"
+
+//=================
+// Component
+//=================
+#include "Texture.h"
+#include "Shader.h"
+#include "VIBuffer_Rect_Tex.h"
+#include "StatComponent.h"
+#include "UI_Manager.h"
+#include "GameInstance.h"
+
+CUITrigger::CUITrigger(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
+	:CGenericUI(pDevice, pDeviceContext)
+{
+}
+
+CUITrigger::CUITrigger(const CUITrigger& rhs)
+	:CGenericUI(rhs)
+{
+}
+
+HRESULT CUITrigger::Initialize_Prototype()
+{
+	if (FAILED(Super::Initialize_Prototype()))
+		return E_FAIL;
+	return S_OK;
+}
+
+HRESULT CUITrigger::Initialize(void* pArg)
+{
+	UI_TRIGGER_DESC* pDesc = static_cast<UI_TRIGGER_DESC*>(pArg);
+	m_eSubClassType = pDesc->eOwner;
+	m_tTriggerData = std::move(pDesc->tTriggerData);
+
+	if (FAILED(Super::Initialize(pArg)))
+		return E_FAIL;
+	if (FAILED(Attach_Personal_Info()))
+		return E_FAIL;
+	return S_OK;
+}
+
+HRESULT CUITrigger::Attach_Personal_Info()
+{
+	switch (m_eSubClassType)
+	{
+	case DTO::EUISubClassType::NONE_OWNER:
+		return S_OK;
+	case DTO::EUISubClassType::END:
+	default:
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
+HRESULT CUITrigger::Bind_Cache()
+{
+	// Hover Enter Canvas
+	for (const _string& str : m_tTriggerData.vecHoverEnterTriggerCanvas)
+	{
+		auto* pCanvas = m_pUIManager->Find_Canvas(m_iLevelID, str);
+		if (nullptr == pCanvas)
+			return E_FAIL;
+
+		m_pTriggerCanvas[ENUM_TO_UINT(ETriggerEventType::HOVER_ENTER)].push_back(pCanvas);
+	}
+
+	// Hover Exit Canvas
+	for (const _string& str : m_tTriggerData.vecHoverExitTriggerCanvas)
+	{
+		auto* pCanvas = m_pUIManager->Find_Canvas(m_iLevelID, str);
+		if (nullptr == pCanvas)
+			return E_FAIL;
+
+		m_pTriggerCanvas[ENUM_TO_UINT(ETriggerEventType::HOVER_EXIT)].push_back(pCanvas);
+	}
+
+	// Press Enter Canvas
+	for (const _string& str : m_tTriggerData.vecPressEnterTriggerCanvas)
+	{
+		auto* pCanvas = m_pUIManager->Find_Canvas(m_iLevelID, str);
+		if (nullptr == pCanvas)
+			return E_FAIL;
+
+		m_pTriggerCanvas[ENUM_TO_UINT(ETriggerEventType::PRESS_ENTER)].push_back(pCanvas);
+	}
+
+	// Press Exit Canvas
+	for (const _string& str : m_tTriggerData.vecPressExitTriggerCanvas)
+	{
+		auto* pCanvas = m_pUIManager->Find_Canvas(m_iLevelID, str);
+		if (nullptr == pCanvas)
+			return E_FAIL;
+
+		m_pTriggerCanvas[ENUM_TO_UINT(ETriggerEventType::PRESS_EXIT)].push_back(pCanvas);
+	}
+
+	// Hover Enter UI
+	for (const _string& str : m_tTriggerData.vecHoverEnterTriggerUI)
+	{
+		auto* pUI = m_pUIManager->Find_GenericUI(m_iLevelID, str);
+		if (nullptr == pUI)
+			return E_FAIL;
+
+		m_pTriggerUI[ENUM_TO_UINT(ETriggerEventType::HOVER_ENTER)].push_back(pUI);
+	}
+
+	// Hover Exit UI
+	for (const _string& str : m_tTriggerData.vecHoverExitTriggerUI)
+	{
+		auto* pUI = m_pUIManager->Find_GenericUI(m_iLevelID, str);
+		if (nullptr == pUI)
+			return E_FAIL;
+
+		m_pTriggerUI[ENUM_TO_UINT(ETriggerEventType::HOVER_EXIT)].push_back(pUI);
+	}
+
+	// Press Enter UI
+	for (const _string& str : m_tTriggerData.vecPressEnterTriggerUI)
+	{
+		auto* pUI = m_pUIManager->Find_GenericUI(m_iLevelID, str);
+		if (nullptr == pUI)
+			return E_FAIL;
+
+		m_pTriggerUI[ENUM_TO_UINT(ETriggerEventType::PRESS_ENTER)].push_back(pUI);
+	}
+
+	// Press Exit UI
+	for (const _string& str : m_tTriggerData.vecPressExitTriggerUI)
+	{
+		auto* pUI = m_pUIManager->Find_GenericUI(m_iLevelID, str);
+		if (nullptr == pUI)
+			return E_FAIL;
+
+		m_pTriggerUI[ENUM_TO_UINT(ETriggerEventType::PRESS_EXIT)].push_back(pUI);
+	}
+
+	return S_OK;
+}
+
+HRESULT CUITrigger::Awake(const _uint iCurrentLevelID)
+{
+	if (FAILED(Super::Awake(iCurrentLevelID)))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+void CUITrigger::Update_Priority(const _float fTimeDelta)
+{
+	Super::Update_Priority(fTimeDelta);
+	if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::PRESS_ENTER))
+	{
+	}
+	else if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::PRESS_EXIT))
+	{
+	}
+	else if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::HOVER_ENTER))
+	{
+		Fire_ToTargets(ETriggerEventType::HOVER_ENTER);
+	}
+	else if (Engine_Utils::Has_Flag(m_iInteractState, EUIEvent_Flag::HOVER_EXIT))
+	{
+		Fire_ToTargets(ETriggerEventType::HOVER_EXIT);
+	}
+}
+
+void CUITrigger::Update(const _float fTimeDelta)
+{
+	Super::Update(fTimeDelta);
+}
+
+void CUITrigger::Update_Late(const _float fTimeDelta)
+{
+	Super::Update_Late(fTimeDelta);
+}
+
+void CUITrigger::Ready_Before_Render(const _float fTimeDelta)
+{
+
+	Super::Ready_Before_Render(fTimeDelta);
+}
+
+HRESULT CUITrigger::Render()
+{
+	if (!m_isVisible)
+		return S_OK;
+
+	if (FAILED(Super::Render()))
+		return E_FAIL;
+
+	if (FAILED(Bind_ShaderResources()))
+		return E_FAIL;
+
+	Get_Component<CShader>()->Apply();
+	Get_Component<CVIBuffer>()->Bind_Resource();
+	Get_Component<CVIBuffer>()->Render();
+
+	return S_OK;
+}
+
+void CUITrigger::Fire_ToTargets(ETriggerEventType eEvent)
+{
+	for (auto* pUI : m_pTriggerUI[ENUM_TO_UINT(eEvent)])
+		if (pUI) pUI->OnUIEvent(eEvent, this);
+
+	//for (auto* pCanvas : m_pTriggerCanvas[ENUM_TO_UINT(eEvent)])
+	//	if (pCanvas) pCanvas->OnUIEvent(eEvent, this);
+}
+
+HRESULT CUITrigger::Ready_Components(UI_TRIGGER_DESC* pDesc)
+{
+	return S_OK;
+}
+
+HRESULT CUITrigger::Bind_ShaderResources()
+{
+	CShader* pShader = Get_Component<CShader>();
+	if (FAILED(Get_Component<CTransform>()->Bind_ShaderResource(pShader)))
+		return E_FAIL;
+
+	Super::Bind_ShaderResources();
+
+	return S_OK;
+}
+
+CUITrigger* CUITrigger::Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
+{
+	CUITrigger* pInstance = new CUITrigger(pDevice, pDeviceContext);
+	if (FAILED(pInstance->Initialize_Prototype()))
+	{
+		MSG_BOX("CUITrigger::Create, Create Failed");
+		Safe_Release(pInstance);
+	}
+	return pInstance;
+}
+
+CGameObject* CUITrigger::Clone(void* pArg)
+{
+	CUITrigger* pInstance = new CUITrigger(*this);
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("CUITrigger::Clone, Clone Failed");
+		Safe_Release(pInstance);
+	}
+	return pInstance;
+}
+
+void CUITrigger::Free()
+{
+	Super::Free();
+}

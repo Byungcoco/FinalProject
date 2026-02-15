@@ -7,6 +7,7 @@
 #include "VIBuffer_Cube_Tex.h"
 #include "Engine_Utils.h"
 #include "Shader.h"
+#include "ComputeShader.h"
 #include "Character.h"
 #include "Texture.h"
 #include "GameInstance.h"
@@ -20,7 +21,6 @@
 #include "UI_Manager.h"
 
 USING(Client)
-
 
 CMainApplication::CMainApplication()
 	: m_pGameInstance (CGameInstance::GetInstance())
@@ -81,6 +81,8 @@ void CMainApplication::Update(const _float fTimeDelta)
 	m_pGameInstance->Flush_All();
 
 	m_pGameInstance->Update_Engine(fTimeDelta);
+	// 자동 정렬 X / Request Sort 호출해줘야됨 
+	CUI_Manager::GetInstance()->Add_RenderGroup(m_pGameInstance->Get_CurrentLevelIndex());
 }
 
 HRESULT CMainApplication::Render()
@@ -88,6 +90,7 @@ HRESULT CMainApplication::Render()
 	Vec4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
 	m_pGameInstance->Draw_Begin(&ClearColor);
 	m_pGameInstance->Draw();
+
 #ifdef _DEBUG
 	m_pDebugGui->Render();
 #endif
@@ -106,31 +109,8 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxPosTex.hlsl";
-		shaderDesc.iNumElements = Engine::VTXPOSTEX::iNumElements;
-		shaderDesc.pElements = Engine::VTXPOSTEX::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXPOSTEX;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxPosTex",
-			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
-			return E_FAIL;
-	}
-
-	// For. Prototype_Component_Shader_VtxPosTex_Particle
-	{
-		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
-		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxPosTex_Particle.hlsl";
-		shaderDesc.iNumElements = Engine::VTXPOSTEX_PARTICLE::iNumElements;
-		shaderDesc.pElements = Engine::VTXPOSTEX_PARTICLE::Elements;
-		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxPosTex_Particle",
-			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
-			return E_FAIL;
-	}
-
-	// For. Prototype_Component_Shader_VtxPos_Particle
-	{
-		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
-		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxPos_Particle.hlsl";
-		shaderDesc.iNumElements = Engine::VTXPOS_PARTICLE::iNumElements;
-		shaderDesc.pElements = Engine::VTXPOS_PARTICLE::Elements;
-		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxPos_Particle",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
 	}
@@ -139,8 +119,7 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxMesh_SkillEffect.hlsl";
-		shaderDesc.iNumElements = Engine::VTXMESH::iNumElements;
-		shaderDesc.pElements = Engine::VTXMESH::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXMESH;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxMesh_SkillEffect",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
@@ -150,8 +129,7 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxNorTex.hlsl";
-		shaderDesc.iNumElements = Engine::VTXNORTEX::iNumElements;
-		shaderDesc.pElements = Engine::VTXNORTEX::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXNORTEX;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxNorTex",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
@@ -161,8 +139,7 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxMesh.hlsl";
-		shaderDesc.iNumElements = Engine::VTXMESH::iNumElements;
-		shaderDesc.pElements = Engine::VTXMESH::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXMESH;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxMesh",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
@@ -172,8 +149,7 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxInstanceMesh.hlsl";
-		shaderDesc.iNumElements = Engine::VTX_INSTANCE_MESH::iNumElements;
-		shaderDesc.pElements = Engine::VTX_INSTANCE_MESH::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTX_INSTANCE_MESH;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxInstanceMesh",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
@@ -183,8 +159,7 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxCube.hlsl";
-		shaderDesc.iNumElements = Engine::VTXCUBE::iNumElements;
-		shaderDesc.pElements = Engine::VTXCUBE::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXCUBE;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxCube",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
@@ -194,19 +169,74 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxAnimMesh.hlsl";
-		shaderDesc.iNumElements = Engine::VTXANIMMESH::iNumElements;
-		shaderDesc.pElements = Engine::VTXANIMMESH::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXANIMMESH;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxAnimMesh",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
 	}
+
+#pragma region Compute_Shader
+	// For. Prototype_Component_Shader_CPT_Effect_Particle
+	{
+		CComputeShader::ComShaderOriginDesc shaderDesc = {};
+		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_CPT_Effect_Particle.hlsl";
+		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_CPT_Effect_Particle",
+			CComputeShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
+			return E_FAIL;
+	}
+
+	// For. Prototype_Component_Shader_BondCombine
+	{
+		CComputeShader::ComShaderOriginDesc shaderDesc = {};
+		shaderDesc.pShaderFilePath = L"../../Shaders/ComShader_BoneCombine.hlsl";
+		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_BondCombine",
+			CComputeShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
+			return E_FAIL;
+	}
+
+	// For. Prototype_Component_Shader_AnimEv
+	{
+		CComputeShader::ComShaderOriginDesc shaderDesc = {};
+		shaderDesc.pShaderFilePath = L"../../Shaders/ComShader_AnimEvaluate.hlsl";
+		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_AnimEv",
+			CComputeShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
+			return E_FAIL;
+	}
+
+	// For. Prototype_Component_Shader_AnimB
+	{
+		CComputeShader::ComShaderOriginDesc shaderDesc = {};
+		shaderDesc.pShaderFilePath = L"../../Shaders/ComShader_AnimBlend.hlsl";
+		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_AnimB",
+			CComputeShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
+			return E_FAIL;
+	}
+
+	// For. Prototype_Component_Shader_BoneMesh
+	{
+		CComputeShader::ComShaderOriginDesc shaderDesc = {};
+		shaderDesc.pShaderFilePath = L"../../Shaders/ComShader_BoneMesh.hlsl";
+		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_BoneMesh",
+			CComputeShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
+			return E_FAIL;
+	}
+
+	// For. Prototype_Component_Shader_GetBone
+	{
+		CComputeShader::ComShaderOriginDesc shaderDesc = {};
+		shaderDesc.pShaderFilePath = L"../../Shaders/ComShader_GetBoneCombine.hlsl";
+		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_GetBone",
+			CComputeShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
+			return E_FAIL;
+	}
+#pragma endregion
+
 #pragma region EFFECT_Shader
 	// For. Prototype_Component_Shader_VtxEffectMesh
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxEffectMesh.hlsl";
-		shaderDesc.iNumElements = Engine::VTXPOS_PARTICLEMESH::iNumElements;
-		shaderDesc.pElements = Engine::VTXPOS_PARTICLEMESH::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXPOS_PARTICLEMESH;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxEffectMesh",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
@@ -216,8 +246,7 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxEffectParticle.hlsl";
-		shaderDesc.iNumElements = Engine::VTXPOS_PARTICLE::iNumElements;
-		shaderDesc.pElements = Engine::VTXPOS_PARTICLE::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXPOS_PARTICLE;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxEffectParticle",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
@@ -227,8 +256,7 @@ HRESULT CMainApplication::Ready_Static_Prototype()
 	{
 		CShader::SHADER_ORIGIN_DESC shaderDesc = {};
 		shaderDesc.pShaderFilePath = L"../../Shaders/Shader_VtxEffectTexture.hlsl";
-		shaderDesc.iNumElements = Engine::VTXPOS_PARTICLE::iNumElements;
-		shaderDesc.pElements = Engine::VTXPOS_PARTICLE::Elements;
+		shaderDesc.eLayout = EVtxLayout::VTXPOS_PARTICLE;
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Shader_VtxEffectTexture",
 			CShader::Create(m_pDevice, m_pDeviceContext, &shaderDesc))))
 			return E_FAIL;
@@ -416,9 +444,14 @@ HRESULT CMainApplication::Ready_Managers()
 
 HRESULT CMainApplication::Ready_Fonts()
 {
-	if (FAILED(m_pGameInstance->Add_Font(L"Font_Default", L"../../Resources/Fonts/156ex.spritefont")))
-		return E_FAIL;
-
+	// font
+	for (const auto& e : std::filesystem::directory_iterator(L"..\\..\\Resources\\Fonts"))
+	{
+		const std::wstring key = e.path().stem().wstring();   // 파일명(확장자 제외)
+		const std::wstring path = e.path().wstring();          // 실제 경로
+		if (FAILED(m_pGameInstance->Add_Font(key.c_str(), path.c_str())))
+			return E_FAIL;
+	}
 	return S_OK;
 }
 

@@ -14,6 +14,7 @@
 #include "VIBuffer_Particle_Mesh.h"
 #include "InstanceMesh.h"
 #include "VIBuffer_Cube_Tex.h"
+#include "Bounds.h"
 #include "Shader.h"
 #include "Camera.h"
 #include "Transform.h"
@@ -28,6 +29,9 @@
 #include "Builder_Example.h"
 #include "Builder_UI.h"
 #include "BuilderSystem.h"
+#include "Builder_AttackOverlap.h"
+#include "DataStruct_AttackOverlap.h"
+#include "DataDocument_AttackOverlap.h"
 
 //=================
 // Object
@@ -43,14 +47,23 @@
 #include "Effect.h"
 #include "EffectObject.h"
 #include "Physics_LandScape.h" // physics test
-#include "StaticModel.h"
-#include "InstanceModel.h"
+#include "StaticObject.h"
+#include "Monster_Dummy.h" // test
+#include "Sword.h"
+
 //=================
 // UI
 //=================
 #include "Canvas.h"
-#include "UILayer.h"
 #include "GenericUI.h"
+#include "UIProgress_Bar.h"
+#include "UIText.h"
+#include "UIJust_Image.h"
+#include "UITrigger.h"
+#include "UISkill_BG.h"
+#include "UIMini_Map.h"
+#include "UIHover_Image.h"
+
 //=================
 // Resource
 //=================
@@ -78,6 +91,8 @@ CLoader::CLoader(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, ELe
 
 HRESULT CLoader::Initailize()
 {
+	m_pBuilderSystem = CBuilderSystem::Create();
+
 	try
 	{
 		m_LoadingThread = std::thread(
@@ -140,15 +155,23 @@ HRESULT CLoader::Loading_For_Logo()
 			if (FAILED(m_pGameInstance->Regist_Document<CDataDocument_Effect>(ENUM_TO_UINT(ELevelType::LOGO), DTO::ECategory::EFFECT)))
 				return E_FAIL;
 
-			if (FAILED(m_pGameInstance->Regist_Document<CDataDocument_UI>(ENUM_TO_UINT(ELevelType::LOGO), DTO::ECategory::MAP)))
+			if (FAILED(m_pGameInstance->Regist_Document<CDataDocument_UI>(ENUM_TO_UINT(ELevelType::LOGO), DTO::ECategory::UI)))
+				return E_FAIL;
+
+			if (FAILED(m_pGameInstance->Regist_Document<CDataDocument_AttackOverlap>(ENUM_TO_UINT(ELevelType::LOGO), DTO::ECategory::OVERLAP_SCRIPT)))
 				return E_FAIL;
 		}
 
+		// Build prototype
+		{
+			if (FAILED(Build_Prototype()))
+				return E_FAIL;
+		}
 
 		// Read Json
 		{
-			if (FAILED(Loading_File(ENUM_TO_UINT(ELevelType::LOGO), DTO::ECategory::EFFECT, L"../../Resources/Data/EffectData/Attack_1.json")))
-				return E_FAIL;
+			//if (FAILED(Loading_File(ENUM_TO_UINT(ELevelType::LOGO), DTO::ECategory::EFFECT, L"../../Resources/Data/EffectData/Attack_1.json")))
+			//	return E_FAIL;
 			// For. Example
 			// if (FAILED(Loading_File(ENUM_TO_UINT(ELevelType::LOGO), DTO::ECategory::MAP, L"asdf")))
 			// 	return E_FAIL;
@@ -165,20 +188,85 @@ HRESULT CLoader::Loading_For_Logo()
 		//if (FAILED(m_pGameInstance->Load_Sounds(L"../../Resources/Sounds")))
 		//	return E_FAIL;
 
-		//if (FAILED(Make_StaticModel_Prototype(ELevelType::LOGO, L"../../Resources/Models/Map/TestMap")))
-		//	return E_FAIL;
+		if (FAILED(Make_StaticObject_Prototype(ELevelType::STATIC, L"../../Resources/Models/Effect_FBX/blade")))
+			return E_FAIL;
 	}
-	if (FAILED(m_pGameInstance->Load_Sounds(L"../../Resources/Sounds")))
-		return E_FAIL;
 
 		// For. Prototype_Component_Button_Test_Texture
-		{
-			CTexture::TEXTURE_COMPONENT_ORIGIN_DESC textureDesc = {};
-			textureDesc.iTextureCount = 22;
-			textureDesc.wstrTexturePath = L"../../Resources/Textures/UI/%d.png";
-			if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_UI_Texture", CTexture::Create(&textureDesc))))
-				return E_FAIL;
-		}
+	{
+		// UI
+		if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Playable/")))
+			return E_FAIL;
+		if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Menu/")))
+			return E_FAIL;
+		if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Battle/")))
+			return E_FAIL;
+		if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Key/")))
+			return E_FAIL;
+		if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/WeaponIcon/")))
+			return E_FAIL;
+		if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/SM_MAP/")))
+			return E_FAIL;
+		if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Map/")))
+			return E_FAIL;
+	}	
+
+	// For. Prototype_Component_Button_Test_Texture
+	{
+		// Effect
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Crack/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Curve/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Fire/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Flower/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Fluid/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Glow/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Gradient/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Ice/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Knife/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Lens/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Lightning/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Line/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Mask/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Normal/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Object/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Partten/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Smoke/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Spark/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Splash/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Spread/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Trail/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Turbulence/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/UI/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/VAT/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/water/")))
+		//	return E_FAIL;
+		//if (FAILED(Loading_Textures(L"../../Resources/Textures/Effect/Wave/")))
+		//	return E_FAIL;
+	}
 	
 #pragma endregion
 
@@ -198,16 +286,30 @@ HRESULT CLoader::Loading_For_Logo()
 	// For. Prototype_Component_Model_Master
 	{
 		CModel::MODEL_ORIGIN_DESC desc = {};
-		desc.eType = EModelType::ANIM;
-		desc.iPrototypeLevelIndex = ENUM_TO_UINT(ELevelType::STATIC);
-		desc.pMatPreTransform = &(matPreTransformScale);	// matPreTransformScale // matPreTransformTurn90
-		desc.wstrModelFolderName = L"PlayerMoon";					// PlayerMoon // Pino
+		desc.eType					= EModelType::ANIM;
+		desc.iPrototypeLevelIndex	= ENUM_TO_UINT(ELevelType::STATIC);
+		desc.pMatPreTransform		= &(matPreTransformScale);	// matPreTransformScale // matPreTransformTurn90
+		desc.wstrModelFolderName	= L"PlayerMoon";					// PlayerMoon // Pino
+		desc.FStageBone				= CModel::STAGEING_BONE::SB_SPCIPICBONE;
+		desc.vecStageBoneIndices	= { 285,286,287,288,289,414,415,416 ,417,418,419 };
 
 		CModel::DATA_ANIMCHANNEL tAniChannelData = {};
 		tAniChannelData.iRootBoneIndex = 2;
 		desc.pAniChannelData = &tAniChannelData;
 
 		m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Model_Master", CModel::Create(m_pDevice, m_pDeviceContext, &desc));
+	}
+
+	// For. Prototype_Component_Model_MoonSword
+	{
+		CModel::MODEL_ORIGIN_DESC desc = {};
+		desc.eType = EModelType::STATIC;
+		desc.iPrototypeLevelIndex = ENUM_TO_UINT(ELevelType::STATIC);
+		desc.pMatPreTransform = &(matPreTransformScale);	// matPreTransformScale
+		desc.wstrModelFolderName = L"Weapon_MoonSword";					// PlayerMoon // Pino
+		desc.FStageBone = CModel::STAGEING_BONE::SB_ZEROBONE;
+
+		m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Model_MoonSword", CModel::Create(m_pDevice, m_pDeviceContext, &desc));
 	}
 	// For. Prototype_Component_Camera
 	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Camera", CCamera::Create());
@@ -221,12 +323,11 @@ HRESULT CLoader::Loading_For_Logo()
 	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Collider_OBB", CCollider::Create(m_pDevice, m_pDeviceContext, EColliderType::OBB));
 	// For. Prototype_Component_Collider_SPHERE
 	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Collider_Sphere", CCollider::Create(m_pDevice, m_pDeviceContext, EColliderType::SPHERE));
-
-
+	// For. Prototype_Component_Bounds
+	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_Bounds", CBounds::Create(m_pDevice, m_pDeviceContext));
 
 	// For. Prototype_Component_Collider_SPHERE
 	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_Component_VIBuffer_InstanceMesh", CInstanceMesh::Create(m_pDevice, m_pDeviceContext));
-
 
 	///////////////////////////////////////
 	//////////// Ready Objects ////////////
@@ -247,9 +348,13 @@ HRESULT CLoader::Loading_For_Logo()
 		ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_GameObject_Effect_Parts", CEffectObject::Create(m_pDevice, m_pDeviceContext));
 
 		/* Map Object */
-		ADD_PROTOTYPE(ELevelType::STATIC, L"Prototype_GameObject_StaticModel", CStaticModel::Create(m_pDevice, m_pDeviceContext));
-		ADD_PROTOTYPE(ELevelType::STATIC, L"Prototype_GameObject_InstanceModel", CInstanceModel::Create(m_pDevice, m_pDeviceContext));
+		ADD_PROTOTYPE(ELevelType::STATIC, L"Prototype_GameObject_StaticObject", CStaticObject::Create(m_pDevice, m_pDeviceContext));
 
+		/* Monster Object */
+		ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_GameObject_Monster_Dummy", CMonster_Dummy::Create(m_pDevice, m_pDeviceContext));
+
+		/* Weapons */
+		ADD_PROTOTYPE(ELevelType::STATIC, L"Prototype_GameObject_Part_Sword", CSword::Create(m_pDevice, m_pDeviceContext));
 	}
 #pragma endregion
 
@@ -269,12 +374,7 @@ HRESULT CLoader::Loading_For_Logo()
 		ADD_PROTOTYPE(ELevelType::STATIC, L"Prototype_Component_VIBuffer_Particle_Mesh", CVIBuffer_Particle_Mesh::Create(m_pDevice, m_pDeviceContext, &ExploDesc));
 
 
-		// For. Prototype_UI_Canvas
-		ADD_PROTOTYPE(ELevelType::STATIC, L"Prototype_UI_Canvas", CCanvas::Create(m_pDevice, m_pDeviceContext));
-		// For. Prototype_UI_UILayer
-		ADD_PROTOTYPE(ELevelType::STATIC, L"Prototype_UI_UILayer", CUILayer::Create(m_pDevice, m_pDeviceContext));
-		// For. Prototype_UI_GenericUI
-		ADD_PROTOTYPE(ELevelType::STATIC, L"Prototype_UI_GenericUI", CGenericUI::Create(m_pDevice, m_pDeviceContext));
+
 	}
 #pragma endregion
 
@@ -284,6 +384,17 @@ HRESULT CLoader::Loading_For_Logo()
 	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::STATIC), L"Prototype_GameObject_Physics_Terrain", CPhysics_Terrain::Create(m_pDevice, m_pDeviceContext));
 
 	/* Map Parsing Test */
+#pragma endregion
+
+#pragma region UI
+	ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_UI_Canvas", CCanvas::Create(m_pDevice, m_pDeviceContext));
+	ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_UI_PROGRESS_BAR", CUIProgress_Bar::Create(m_pDevice, m_pDeviceContext));
+	ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_UI_UI_TEXT", CUIText::Create(m_pDevice, m_pDeviceContext));
+	ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_UI_JUST_IMAGE", CUIJust_Image::Create(m_pDevice, m_pDeviceContext));
+	ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_UI_TRIGGER", CUITrigger::Create(m_pDevice, m_pDeviceContext));
+	ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_UI_SkillBG", CUISkill_BG::Create(m_pDevice, m_pDeviceContext));
+	ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_UI_MiniMap", CUIMini_Map::Create(m_pDevice, m_pDeviceContext));
+	ADD_PROTOTYPE(ELevelType::LOGO, L"Prototype_UI_HoverImage", CUIHover_Image::Create(m_pDevice, m_pDeviceContext));
 #pragma endregion
 
 	m_isFinished = true;
@@ -318,8 +429,12 @@ HRESULT CLoader::Loading_Textures(const wstring& wstrFolder)
 	for (const auto& entry : std::filesystem::directory_iterator(wstrFolder))
 	{
 		wstring wstrFileName = { L"" };
+		_wstring ext = { L"" };
 		if (entry.is_regular_file())
 		{
+			ext = entry.path().extension().wstring();
+			if (ext == L".ini")
+				continue;
 			wstrFileName = entry.path().filename().lexically_normal().stem();
 			CTextureBase::RESOURCE_BASE_DESC desc = {};
 			desc.wstrName = wstrFileName;
@@ -349,7 +464,7 @@ HRESULT CLoader::Loading_Texture(const wstring& wstrFile)
 	return S_OK;
 }
 
-HRESULT CLoader::Make_StaticModel_Prototype(ELevelType eLevelType, const wstring& wstrFilePath)
+HRESULT CLoader::Make_StaticObject_Prototype(ELevelType eLevelType, const wstring& wstrFilePath)
 {
 	std::filesystem::path filePath{ wstrFilePath };
 	filePath /= "Model";
@@ -382,6 +497,46 @@ HRESULT CLoader::Make_StaticModel_Prototype(ELevelType eLevelType, const wstring
 	return S_OK;
 }
 
+HRESULT CLoader::Build_Prototype()
+{
+	if (FAILED(m_pBuilderSystem->Ready_Builder(DTO::ECategory::OVERLAP_SCRIPT, CBuilder_AttackOverlap::Create(m_pDevice, m_pDeviceContext, ENUM_TO_UINT(ELevelType::LOGO)))))
+		return E_FAIL;
+
+	if (FAILED(Build_Files()))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLoader::Build_Files()
+{
+	if (FAILED(Ready_AttackOverlap()))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLoader::Ready_AttackOverlap()
+{
+	ELevelType eLevelType = ELevelType::LOGO;
+	DTO::ECategory eCategory = DTO::ECategory::OVERLAP_SCRIPT;
+	_uint iLevelID = ENUM_TO_UINT(eLevelType);
+
+	std::filesystem::path FilePath = L"../../Resources/Data/AttackOverlapData/PlayerMoon_155_Animations_Fixed.json";
+	vector<path> vecfiles;
+
+	if (!std::filesystem::exists(FilePath))
+		return E_FAIL;
+
+	if (FAILED(m_pGameInstance->Load_File_Json(iLevelID, eCategory, FilePath)))
+		return E_FAIL;
+
+	if (FAILED(m_pBuilderSystem->Build_File(iLevelID, eCategory, FilePath.stem().string())))
+		return E_FAIL;
+
+	return S_OK;
+}
+
 CLoader* CLoader::Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, ELevelType eLoadingLevelID)
 {
 	CLoader* pInstance = new CLoader(pDevice, pDeviceContext, eLoadingLevelID);
@@ -402,6 +557,7 @@ void CLoader::Free()
 		m_LoadingThread.join();
 	}
 
+	Safe_Release(m_pBuilderSystem);
 	Safe_Release(m_pGameInstance);
 	Safe_Release(m_pDeviceContext);
 	Safe_Release(m_pDevice);

@@ -16,6 +16,9 @@ public:
 	static void Add_Text(OUT string& str_out, const string& strfind , const string& stradd ,_bool isback = false , _int32 ioffset = 0);
 	static void Add_Text(OUT wstring& str_out, const wstring& strfind , const wstring& stradd , _bool isback = false, _int32 i0ffset = 0);
 
+	static wstring To_Lower(wstring s);
+	static wstring Normalize_PathKey(const path& filePath);
+	static void Hash_HasCombine(size_t& seed, size_t value);
 
 	static string NormalizePath(const std::filesystem::path& path);
 	static wstring NormalizePath_WString(const std::filesystem::path& path);
@@ -40,14 +43,20 @@ public:
 
 	static _float SmoothStep(_float fT) { return fT * fT * (3.f - 2.f * fT); }
 
+	static void Merge_MinMax(const Vec3* pMinMax, Vec3& ioMin, Vec3& ioMax);
+
+	static BoundingBox MakeAABB_FromMinMax(const Vec3 &vMin, const Vec3 &vMax);
+	static BoundingSphere MakeSphere_FromMinMax(const Vec3& vMin, const Vec3& vMax);
 
 #pragma region Read Write Json
 
 	static void read_vec3_xyz(const json& _j, Vec3& vOut);
+	static void read_vec2_xy(const json& _j, Vec2& vOut);
 	static void read_vec3_PitchYawRoll(const json& _j, Vec3& vOut);
 	static void read_vec4_Quat(const json& _j, Quat& vOut);
 
 	static void write_vec3_xyz(json& _j, const Vec3& vOut);
+	static void write_vec2_xy(json& _j, const Vec2& vOut);
 	static void write_vec3_PitchYawRoll(json& _j, const Vec3& vOut);
 	static void write_vec4_Quat( json& _j, const Quat& vOut);
 
@@ -78,7 +87,9 @@ public:
 
 #pragma endregion
 
-
+	
+	static string				MaterialTextureType_ToString(EMaterialTextureType eType);
+	static EMaterialTextureType MaterialTextureType_ToEnum(string strType);
 
 
 	static string MI_ToString(EMaterialInstanceType eType)

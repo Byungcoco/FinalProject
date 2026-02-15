@@ -4,6 +4,9 @@
 #include "Physics_CCTManager.h"
 #include "Physics_ResourceManager.h"
 
+#include "Physics_UserHitReport.h"
+#include "Physics_NPCHitReport.h"
+
 CPhysics_CCTManager::CPhysics_CCTManager(ID3D11Device* pDevice, ID3D11DeviceContext* pContext, PxPhysics* pPhysics, PxScene* pScene, CPhysics_ResourceManager* pResourceManager)
 	: m_pGameInstance{ CGameInstance::GetInstance() },
 	m_pDevice{ pDevice },
@@ -21,6 +24,9 @@ CPhysics_CCTManager::CPhysics_CCTManager(ID3D11Device* pDevice, ID3D11DeviceCont
 HRESULT CPhysics_CCTManager::Initialize()
 {
 	m_pControllerManager = PxCreateControllerManager(*m_pScene);
+
+	m_pUserHitReport = CPhysics_UserHitReport::Create();
+	m_pNPCHitReport = CPhysics_NPCHitReport::Create();
 
 	return S_OK;
 }
@@ -57,7 +63,8 @@ _int CPhysics_CCTManager::GetNumCharacterControllers()
 
 void CPhysics_CCTManager::ReleaseCharacter(PxController* cct)
 {
-	PX_RELEASE(cct);
+	if (cct)
+		PX_RELEASE(cct);
 }
 
 void CPhysics_CCTManager::ReleaseCCTManager()
@@ -68,11 +75,18 @@ void CPhysics_CCTManager::ReleaseCCTManager()
 PxController* CPhysics_CCTManager::MakeBoxController(PHYSICSCCT_DESC* pDesc)
 {
 	PxBoxControllerDesc desc{};
-	desc.contactOffset = 0.1f;
 	desc.halfSideExtent = pDesc->vExtens.x / 2.f;
 	desc.halfHeight = pDesc->vExtens.y / 2.f;
 	desc.halfForwardExtent = pDesc->vExtens.z / 2.f;
 	desc.material = m_pResourceManager->GetMaterial(&pDesc->tMaterial);
+
+	desc.contactOffset = 0.1f;
+	desc.stepOffset = 0.5f;
+
+	if (pDesc->bIsPlayer)
+		desc.reportCallback = m_pUserHitReport;
+	else
+		desc.reportCallback = m_pNPCHitReport;
 
 	return m_pControllerManager->createController(desc);
 }
@@ -80,12 +94,17 @@ PxController* CPhysics_CCTManager::MakeBoxController(PHYSICSCCT_DESC* pDesc)
 PxController* CPhysics_CCTManager::MakeCapsuleController(PHYSICSCCT_DESC* pDesc)
 {
 	PxCapsuleControllerDesc desc{};
-	desc.contactOffset = 0.1f;
 	desc.radius = pDesc->fRadius;
 	desc.height = pDesc->fHeight;
 	desc.material = m_pResourceManager->GetMaterial(&pDesc->tMaterial);
 
-	desc.stepOffset = 1.5f;
+	desc.contactOffset = 0.1f;
+	desc.stepOffset = 0.5f;
+
+	if (pDesc->bIsPlayer)
+		desc.reportCallback = m_pUserHitReport;
+	else
+		desc.reportCallback = m_pNPCHitReport;
 
 	return m_pControllerManager->createController(desc);
 }
@@ -105,10 +124,15 @@ CPhysics_CCTManager* CPhysics_CCTManager::Create(ID3D11Device* pDevice, ID3D11De
 
 void CPhysics_CCTManager::Free()
 {
+	Safe_Release(m_pUserHitReport);
+	Safe_Release(m_pNPCHitReport);
+
 	Safe_Release(m_pResourceManager);
 
 	ReleaseCCTManager();
-	PX_RELEASE(m_pControllerManager);
+
+	if (m_pControllerManager)
+		PX_RELEASE(m_pControllerManager);
 
 	Safe_Release(m_pDevice);
 	Safe_Release(m_pContext);

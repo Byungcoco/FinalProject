@@ -21,7 +21,6 @@ HRESULT CCamera_Manager::Initiailize()
 	_uint					iNumViewports = { 1 };
 	m_pDeviceContext->RSGetViewports(&iNumViewports, &ViewportDesc);
 	m_matProjection_UI = ::XMMatrixOrthographicLH(ViewportDesc.Width, ViewportDesc.Height, 0.f, 1.f);
-
 	Create_ConstantBuffer();
 	return S_OK;
 }
@@ -60,6 +59,7 @@ void CCamera_Manager::Change_MainCamera(CameraType eType, const wstring& wstrTag
 	CCameraMan* pCameraMan = itr->second;
 	Safe_AddRef(pCameraMan);
 	m_pMainCamera = pCameraMan;
+	Update_ViewMatrix();
 }
 
 HRESULT CCamera_Manager::Change_Target_Next()
@@ -174,6 +174,8 @@ void CCamera_Manager::Setup_UIViewProj_ToCBuffer()
 
 void CCamera_Manager::Setup_Inv_ToCBuffer()
 {
+	m_tInvDesc.matCamView = m_matView;
+	m_tInvDesc.matCamProj = m_matProjection;
 	m_tInvDesc.matInvView = m_matView.Invert();
 	m_tInvDesc.matInvProj = m_matProjection.Invert();
 	m_pInv_CBuffer->Copy_Data(m_tInvDesc);

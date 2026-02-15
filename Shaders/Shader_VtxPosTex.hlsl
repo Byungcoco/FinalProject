@@ -7,51 +7,131 @@ VS_OUT_POS_TEX VS_MAIN(VS_IN_POS_TEX input)
     output.vPosition = mul(float4(input.vPosition, 1.f), W);
     output.vPosition = mul(output.vPosition, VP);
     output.vUV = input.vUV;
-    output.fHP = saturate(g_fHpBarRatio);
     return output;
 }
 
 PS_OUT PS_MAIN(PS_IN_POS_TEX input)
 {
     PS_OUT output;
-    output.vColor = g_DefaultTextures[DEFAULT].Sample(LinearSampler, input.vUV);
-    return output;
-}
-
-PS_OUT PS_HPBAR(PS_IN_POS_TEX input)
-{
-    PS_OUT output;
-    output.vColor = (input.vUV.x <= input.fHP) ? float4(0.6f, 0.1f, 0.1f, 1.f) : float4(0.6f, 0.6f, 0.1f, 1.f);
-    return output;
-}
-
-PS_OUT PS_SKILLICON(PS_IN_POS_TEX input)
-{
-    PS_OUT output;
-    float4 vIconMask = g_DefaultTextures[0].Sample(LinearSampler, input.vUV);
-    if (ALPHA_TEST(vIconMask.a, 0.2f))
-        discard;
-    vIconMask *= (input.vUV.y >= 1.f - input.fHP) ? float4(0.3f, 0.3f, 0.3f, 1.f) : 1.f;
+    float2 uv = input.vUV;
+    // Flip X
+    if (g_iFlip == 1)
+        uv.x = 1.0f - uv.x;
+    // Flip Y
+    else if (g_iFlip == 2)   
+        uv.y = 1.0f - uv.y;
+    // Flip XY
+    else if (g_iFlip == 3)   
+    {
+        uv.x = 1.0f - uv.x;
+        uv.y = 1.0f - uv.y;
+    }
     
-    float4 vIcon = g_DefaultTextures[1].Sample(LinearSampler, input.vUV);
-    output.vColor = vIconMask * vIcon;
+    output.vColor = g_DefaultTextures[DEFAULT].Sample(PointSampler, uv);
+    if(output.vColor.a < 0.3f)
+        discard;
     return output;
 }
 
-PS_OUT PS_UIHPBAR(PS_IN_POS_TEX input)
+PS_OUT PS_COLOR(PS_IN_POS_TEX input)
 {
     PS_OUT output;
-    float4 vTexture = g_DefaultTextures[0].Sample(LinearSampler, input.vUV);
-    if (ALPHA_TEST(vTexture.a, 0.2f))
+    float2 uv = input.vUV;
+    // Flip X
+    if (g_iFlip == 1)
+        uv.x = 1.0f - uv.x;
+    // Flip Y
+    else if (g_iFlip == 2)   
+        uv.y = 1.0f - uv.y;
+    // Flip XY
+    else if (g_iFlip == 3)
+    {
+        uv.x = 1.0f - uv.x;
+        uv.y = 1.0f - uv.y;
+    }
+    output.vColor = g_DefaultTextures[DEFAULT].Sample(PointSampler, uv);
+    if (output.vColor.a < 0.3f)
         discard;
     
-    float fNewUVX = (input.vUV.x - g_fU0) / (g_fU1 - g_fU0);
-    float fFill = step(fNewUVX, input.fHP);
-    float4 vFillColor = { 0.1f, 0.7f, 0.1f, 1.f };
-    float4 vEmptyColor = { 0.6f, 0.3f, 0.1f, 1.f };
-    output.vColor = lerp(vEmptyColor, vFillColor, fFill);
+    output.vColor = g_vColorTint;
     return output;
 }
+
+PS_OUT PS_FADE(PS_IN_POS_TEX input)
+{
+    PS_OUT output;
+    float2 uv = input.vUV;
+    // Flip X
+    if (g_iFlip == 1)
+        uv.x = 1.0f - uv.x;
+    // Flip Y
+    else if (g_iFlip == 2)   
+        uv.y = 1.0f - uv.y;
+    // Flip XY
+    else if (g_iFlip == 3)
+    {
+        uv.x = 1.0f - uv.x;
+        uv.y = 1.0f - uv.y;
+    }
+    
+    vector vColor = g_DefaultTextures[0].Sample(PointSampler, uv);
+    if(g_iColor == 1)
+        vColor.rgb = g_vColorTint;
+    
+    vColor.a *= g_fAlphaRatio;
+    output.vColor = vColor;
+    return output;
+}
+
+PS_OUT PS_PROGRESS(PS_IN_POS_TEX input)
+{
+    PS_OUT output;
+    float2 uv = input.vUV;
+    float mask = 1.0f;
+    
+       // Flip X
+    if (g_iFlip == 1)
+        uv.x = 1.0f - uv.x;
+    // Flip Y
+    else if (g_iFlip == 2)   
+        uv.y = 1.0f - uv.y;
+    // Flip XY
+    else if (g_iFlip == 3)
+    {
+        uv.x = 1.0f - uv.x;
+        uv.y = 1.0f - uv.y;
+    }
+    
+    vector vColor = g_DefaultTextures[0].Sample(PointSampler, uv);
+    if(vColor.a < 0.3f)
+        discard;
+    
+    if (g_iColor == 1)
+        vColor = g_vColorTint;
+    
+    output.vColor = vColor;
+    
+    if (g_iFillDir == 0) 
+        mask = step(uv.x, g_fProgressRatio);        //right -> left
+    else if (g_iFillDir == 1)
+        mask = step(1.0f - uv.x, g_fProgressRatio); //left -> right
+    else if (g_iFillDir == 2)
+        mask = step(1.0f - uv.y, g_fProgressRatio); //up -> down
+    else if (g_iFillDir == 3)
+        mask = step(uv.y, g_fProgressRatio); //down -> up
+    else if (g_iFillDir == 4)
+    {
+        float dist = abs(uv.x - 0.5f);
+        float haf = g_fProgressRatio * 0.5f;
+        mask = step(dist, haf);
+    }
+    
+    if (mask <= 0.0f)
+        discard;
+    
+    return output;
+}
+
 
 PS_OUT PS_LOCKON(PS_IN_POS_TEX input)
 {
@@ -64,10 +144,9 @@ PS_OUT PS_LOCKON(PS_IN_POS_TEX input)
 
 technique11 T0
 {
-    PASS_RS_DS_BS_VP(Default, RS_Default, DS_Default, BS_Default, VS_MAIN, PS_MAIN)
-    PASS_RS_DS_BS_VP(P1, RS_Default, DS_Default, BS_AlphaBlend, VS_MAIN, PS_MAIN)
-    PASS_RS_DS_BS_VP(HpBar, RS_Default, DS_Default, BS_Default, VS_MAIN, PS_HPBAR)
-    PASS_RS_DS_BS_VP(SkillIcon, RS_Default, DS_Default, BS_Default, VS_MAIN, PS_SKILLICON)
-    PASS_RS_DS_BS_VP(UIHpBar, RS_Default, DS_Default, BS_Default, VS_MAIN, PS_UIHPBAR)
-    PASS_RS_DS_BS_VP(UILockon, RS_Default, DS_Default, BS_AlphaBlend, VS_MAIN, PS_LOCKON)
+    PASS_RS_DS_BS_VP(Default,       RS_Default, DS_Disabled, BS_Default, VS_MAIN, PS_MAIN)
+    PASS_RS_DS_BS_VP(DefaultAlpha,  RS_Default, DS_Disabled, BS_AlphaBlend, VS_MAIN, PS_MAIN)
+    PASS_RS_DS_BS_VP(Color,         RS_Default, DS_Disabled, BS_AlphaBlend, VS_MAIN, PS_COLOR)
+    PASS_RS_DS_BS_VP(Fade,          RS_Default, DS_Disabled, BS_AlphaBlend, VS_MAIN, PS_FADE)
+    PASS_RS_DS_BS_VP(Progress,      RS_Default, DS_Disabled, BS_AlphaBlend, VS_MAIN, PS_PROGRESS)
 };

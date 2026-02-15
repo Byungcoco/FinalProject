@@ -112,9 +112,6 @@
     <Filter Include="06. FSM\Player\DashBack">
       <UniqueIdentifier>{902bc6b0-2606-46cf-902c-e58daa3a16a9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="06. FSM\Player\DashFront">
-      <UniqueIdentifier>{b738b353-6637-40f9-9762-6a4027a61b1f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="06. FSM\Player\DashSky">
       <UniqueIdentifier>{39a224de-7994-4a34-8213-33de7f2ffb80}</UniqueIdentifier>
     </Filter>
@@ -163,26 +160,14 @@
     <Filter Include="07. System\01. Builder\UI">
       <UniqueIdentifier>{c030ae43-15b7-4d22-8ca7-b55ab7fdc119}</UniqueIdentifier>
     </Filter>
-    <Filter Include="07. System\01. Builder\EffectBuilder">
-      <UniqueIdentifier>{0a51c3b4-11ce-445a-904c-410b2a5ef809}</UniqueIdentifier>
-    </Filter>
     <Filter Include="03. GameObject\UIObjects\00.Manager">
       <UniqueIdentifier>{7559622c-8d80-4e5c-81bd-e123eb0f162c}</UniqueIdentifier>
     </Filter>
     <Filter Include="03. GameObject\UIObjects\01.Canvas">
       <UniqueIdentifier>{bef61798-c2ef-48e4-8db0-faf0d1677c2d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="03. GameObject\UIObjects\02.Layer">
-      <UniqueIdentifier>{54739f16-d1ed-490f-b95b-8ee9350dd97f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="03. GameObject\UIObjects\03.UI">
-      <UniqueIdentifier>{6d2a781d-ab40-4385-b96c-b3366f4eaba6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="06. FSM\Player\Attack">
       <UniqueIdentifier>{7ebbc28f-6b61-485b-b6e8-1bfe363c2de3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="06. FSM\Player\Attack\Melee">
-      <UniqueIdentifier>{2b993293-fadd-49b9-88a4-fc11e29bf8ae}</UniqueIdentifier>
     </Filter>
     <Filter Include="03. GameObject\MapObject">
       <UniqueIdentifier>{b160eafb-0791-4bab-a9f6-d8d8d7b9532c}</UniqueIdentifier>
@@ -196,11 +181,17 @@
     <Filter Include="07. System\01. Builder\Map">
       <UniqueIdentifier>{8c8cb986-b28e-4058-aca0-3a2b0b85e2e0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="03. GameObject\UIObjects\04.Action">
-      <UniqueIdentifier>{3ddc639a-e37a-4e32-9249-6cb9fc8982e3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="03. GameObject\MapObject\02. InstanceModel">
       <UniqueIdentifier>{2be52ba2-2a45-42f4-aa0d-4f0d8e44cbe8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="04. Shaders\ComputeShader_Labs">
+      <UniqueIdentifier>{8c14e548-7930-4ec0-b748-e471998a55b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="06. FSM\Player\Attack\Combo">
+      <UniqueIdentifier>{c441f698-d661-4b43-9a38-86ca6478bcfe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="06. FSM\Player\Attack\Combo\Moon">
+      <UniqueIdentifier>{03a248e9-eb08-4143-a1f8-99a1bbf2dbc8}</UniqueIdentifier>
     </Filter>
     <Filter Include="99. ETC\01. ImGui">
       <UniqueIdentifier>{aa2685d2-18f6-417c-ba8e-cf78608c7618}</UniqueIdentifier>
@@ -225,6 +216,84 @@
     </Filter>
     <Filter Include="07. System\02. Debug_ImGui\Layout\ActionState">
       <UniqueIdentifier>{08101873-1d09-4a2d-9022-d599b7d73c9d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="04. Shaders\ComputeShader_Labs">
+      <UniqueIdentifier>{8c14e548-7930-4ec0-b748-e471998a55b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI">
+      <UniqueIdentifier>{6d2a781d-ab40-4385-b96c-b3366f4eaba6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\PlayerHP">
+      <UniqueIdentifier>{d1da7a10-7b69-4f7d-9c38-81e993488207}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Image">
+      <UniqueIdentifier>{6d340ec4-9fd3-485b-bb1c-8989cfd57761}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Image\JustImage">
+      <UniqueIdentifier>{fd843193-a085-4c64-9708-e0849b95da7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Progress Bar">
+      <UniqueIdentifier>{bd7da17c-04aa-4842-8652-0f67ca4cf8ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Text">
+      <UniqueIdentifier>{4c552970-7965-46f3-85ec-73d256c4eba8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. System\02. Debug_ImGui\Layout\Frustrum">
+      <UniqueIdentifier>{bfce2568-6c1b-4d14-9071-f78dd8aba44c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. System\02. Debug_ImGui\Inspector\Global">
+      <UniqueIdentifier>{ff13b3dc-1ddc-457a-a989-4a75e72737e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. System\01. Builder\Builder_AttackOverlap">
+      <UniqueIdentifier>{c1589ec0-b521-4810-8e66-71ed1cf97227}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\ContainerObjects\Monster">
+      <UniqueIdentifier>{a9cba2b5-38c2-4050-8518-588960127889}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Trigger">
+      <UniqueIdentifier>{48b4a088-d124-4a5f-a826-7eac6ea855f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Image\Dynamic Image">
+      <UniqueIdentifier>{3a479948-c2c8-4326-9dcd-9a9c7536eb7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Image\Dynamic Image\00.SkillBG">
+      <UniqueIdentifier>{f1acf951-62e0-4e8b-b106-6fd9b77c5697}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. System\02. Debug_ImGui\Layout\Frame">
+      <UniqueIdentifier>{26872d9e-983a-47c0-940f-aa4b37bb39e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Image\Dynamic Image\02.HoverImage">
+      <UniqueIdentifier>{871de243-5883-42bb-b109-9645901ce4d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\UIObjects\02.UI\Image\Dynamic Image\01.Minimap">
+      <UniqueIdentifier>{f89b605a-01f2-485c-87d7-f34d36eeef01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. System\02. Debug_ImGui\Layout\Frame">
+      <UniqueIdentifier>{26872d9e-983a-47c0-940f-aa4b37bb39e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="04. Shaders\ComputeShaders">
+      <UniqueIdentifier>{f29a8226-048f-4c41-b7e7-685b07e919a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="04. Shaders\ComputeShaders\Animation">
+      <UniqueIdentifier>{e1116719-99e0-40e9-9464-40e6a3d04d71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="04. Shaders\ComputeShaders\Effect">
+      <UniqueIdentifier>{a5cd0610-f7dc-4f6d-ba0f-ebf5e8e2dd1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\PartObjects\Weapon\Sword">
+      <UniqueIdentifier>{9716c9b5-cecc-4233-af3e-15a59a69c7e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. GameObject\PartObjects\Weapon\Gun">
+      <UniqueIdentifier>{6a93f015-83a7-4ad9-a084-d7e71fa8f3a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. System\01. Builder\Effect">
+      <UniqueIdentifier>{0a51c3b4-11ce-445a-904c-410b2a5ef809}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. System\01. Builder\Effect\Builder_Effect">
+      <UniqueIdentifier>{9c580bfd-a983-4b3f-a72a-f1da0a5c9270}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. System\01. Builder\Effect\Builder_EffectEvent">
+      <UniqueIdentifier>{5d286e09-eee0-4b43-bcea-01a835550da6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -327,9 +396,6 @@
     <ClInclude Include="..\Public\State_DashBack.h">
       <Filter>06. FSM\Player\DashBack</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\State_DashFront.h">
-      <Filter>06. FSM\Player\DashFront</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\State_DashSky.h">
       <Filter>06. FSM\Player\DashSky</Filter>
     </ClInclude>
@@ -376,16 +442,10 @@
       <Filter>07. System\01. Builder\UI</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\GenericUI.h">
-      <Filter>03. GameObject\UIObjects\03.UI</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\UILayer.h">
-      <Filter>03. GameObject\UIObjects\02.Layer</Filter>
+      <Filter>03. GameObject\UIObjects\02.UI</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Canvas.h">
       <Filter>03. GameObject\UIObjects\01.Canvas</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\EffectBuilder.h">
-      <Filter>07. System\01. Builder\EffectBuilder</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Physics_LandScape.h">
       <Filter>03. GameObject\PhysicsTerrain</Filter>
@@ -393,17 +453,11 @@
     <ClInclude Include="..\Public\MapObject.h">
       <Filter>03. GameObject\MapObject\00. MapObject</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\StaticModel.h">
+    <ClInclude Include="..\Public\StaticObject.h">
       <Filter>03. GameObject\MapObject\01. StaticModel</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Builder_Map.h">
       <Filter>07. System\01. Builder\Map</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\UIAction_Client.h">
-      <Filter>03. GameObject\UIObjects\04.Action</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\InstanceModel.h">
-      <Filter>03. GameObject\MapObject\02. InstanceModel</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\imconfig.h">
       <Filter>99. ETC\01. ImGui</Filter>
@@ -435,12 +489,6 @@
     <ClInclude Include="..\Public\imstb_truetype.h">
       <Filter>99. ETC\01. ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\ImGui_ClientDebug.h">
-      <Filter>07. System\02. Debug_ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\ImGui_Layout.h">
-      <Filter>07. System\02. Debug_ImGui\Layout</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\ImGui_Inspector.h">
       <Filter>07. System\02. Debug_ImGui\Inspector</Filter>
     </ClInclude>
@@ -455,6 +503,69 @@
     </ClInclude>
     <ClInclude Include="..\public\ImGui_PlayerInspector.h">
       <Filter>07. System\02. Debug_ImGui\Inspector\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\State_ComboBase.h">
+      <Filter>06. FSM\Player\Attack\Combo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\State_MoonCombo.h">
+      <Filter>06. FSM\Player\Attack\Combo\Moon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIJust_Image.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\JustImage</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UISkill_BG.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\Dynamic Image\00.SkillBG</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIProgress_Bar.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Progress Bar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIText.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ImGui_FrustrumLayout.h">
+      <Filter>07. System\02. Debug_ImGui\Layout\Frustrum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ImGui_GlobalInspector.h">
+      <Filter>07. System\02. Debug_ImGui\Inspector\Global</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Builder_AttackOverlap.h">
+      <Filter>07. System\01. Builder\Builder_AttackOverlap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Monster_Dummy.h">
+      <Filter>03. GameObject\ContainerObjects\Monster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UITrigger.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIDynamic_Image.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\Dynamic Image</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIMini_Map.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\Dynamic Image\01.Minimap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIButton_Trigger.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Trigger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ImGui_Layout.h">
+      <Filter>07. System\02. Debug_ImGui\Layout</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ImGui_FrameLayout.h">
+      <Filter>07. System\02. Debug_ImGui\Layout\Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\ImGui_ClientDebug.h">
+      <Filter>07. System\02. Debug_ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Sword.h">
+      <Filter>03. GameObject\PartObjects\Weapon\Sword</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIHover_Image.h">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\Dynamic Image\02.HoverImage</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Builder_Effect.h">
+      <Filter>07. System\01. Builder\Effect\Builder_Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Builder_EffectEvent.h">
+      <Filter>07. System\01. Builder\Effect\Builder_EffectEvent</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -540,12 +651,6 @@
     <ClCompile Include="..\Private\StateBase_Player.cpp">
       <Filter>06. FSM\Player</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\State_Walk.cpp">
-      <Filter>06. FSM\Player\Walk</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\State_RunLoop.cpp">
-      <Filter>06. FSM\Player\RunLoop</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\State_Crouch.cpp">
       <Filter>06. FSM\Player\Crouch</Filter>
     </ClCompile>
@@ -554,9 +659,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\State_DashBack.cpp">
       <Filter>06. FSM\Player\DashBack</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\State_DashFront.cpp">
-      <Filter>06. FSM\Player\DashFront</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\State_DashSky.cpp">
       <Filter>06. FSM\Player\DashSky</Filter>
@@ -572,12 +674,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\State_JumpBack.cpp">
       <Filter>06. FSM\Player\JumpBack</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\State_RunShort.cpp">
-      <Filter>06. FSM\Player\RunShort</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\State_Slide.cpp">
-      <Filter>06. FSM\Player\Slide</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\UI_Manager.cpp">
       <Filter>03. GameObject\UIObjects\00.Manager</Filter>
@@ -604,16 +700,10 @@
       <Filter>07. System\01. Builder\UI</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\GenericUI.cpp">
-      <Filter>03. GameObject\UIObjects\03.UI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\UILayer.cpp">
-      <Filter>03. GameObject\UIObjects\02.Layer</Filter>
+      <Filter>03. GameObject\UIObjects\02.UI</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Canvas.cpp">
       <Filter>03. GameObject\UIObjects\01.Canvas</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\EffectBuilder.cpp">
-      <Filter>07. System\01. Builder\EffectBuilder</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Physics_LandScape.cpp">
       <Filter>03. GameObject\PhysicsTerrain</Filter>
@@ -621,17 +711,11 @@
     <ClCompile Include="..\Private\MapObject.cpp">
       <Filter>03. GameObject\MapObject\00. MapObject</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\StaticModel.cpp">
+    <ClCompile Include="..\Private\StaticObject.cpp">
       <Filter>03. GameObject\MapObject\01. StaticModel</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Builder_Map.cpp">
       <Filter>07. System\01. Builder\Map</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\UIAction_Client.cpp">
-      <Filter>03. GameObject\UIObjects\04.Action</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\InstanceModel.cpp">
-      <Filter>03. GameObject\MapObject\02. InstanceModel</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\imgui_widgets.cpp">
       <Filter>99. ETC\01. ImGui</Filter>
@@ -657,12 +741,6 @@
     <ClCompile Include="..\Private\imgui_tables.cpp">
       <Filter>99. ETC\01. ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\ImGui_ClientDebug.cpp">
-      <Filter>07. System\02. Debug_ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\ImGui_Layout.cpp">
-      <Filter>07. System\02. Debug_ImGui\Layout</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\ImGui_Inspector.cpp">
       <Filter>07. System\02. Debug_ImGui\Inspector</Filter>
     </ClCompile>
@@ -677,6 +755,81 @@
     </ClCompile>
     <ClCompile Include="..\private\ImGui_PlayerInspector.cpp">
       <Filter>07. System\02. Debug_ImGui\Inspector\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIJust_Image.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\JustImage</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UISkill_BG.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\Dynamic Image\00.SkillBG</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIProgress_Bar.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Progress Bar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIText.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ImGui_FrustrumLayout.cpp">
+      <Filter>07. System\02. Debug_ImGui\Layout\Frustrum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ImGui_GlobalInspector.cpp">
+      <Filter>07. System\02. Debug_ImGui\Inspector\Global</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Builder_AttackOverlap.cpp">
+      <Filter>07. System\01. Builder\Builder_AttackOverlap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Monster_Dummy.cpp">
+      <Filter>03. GameObject\ContainerObjects\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UITrigger.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\State_Walk.cpp">
+      <Filter>06. FSM\Player\Walk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\State_RunLoop.cpp">
+      <Filter>06. FSM\Player\RunLoop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\State_RunShort.cpp">
+      <Filter>06. FSM\Player\RunShort</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\State_Slide.cpp">
+      <Filter>06. FSM\Player\Slide</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\State_ComboBase.cpp">
+      <Filter>06. FSM\Player\Attack\Combo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\State_MoonCombo.cpp">
+      <Filter>06. FSM\Player\Attack\Combo\Moon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIDynamic_Image.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\Dynamic Image</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIMini_Map.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\Dynamic Image\01.Minimap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIButton_Trigger.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Trigger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ImGui_Layout.cpp">
+      <Filter>07. System\02. Debug_ImGui\Layout</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ImGui_FrameLayout.cpp">
+      <Filter>07. System\02. Debug_ImGui\Layout\Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ImGui_ClientDebug.cpp">
+      <Filter>07. System\02. Debug_ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Sword.cpp">
+      <Filter>03. GameObject\PartObjects\Weapon\Sword</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Builder_Effect.cpp">
+      <Filter>07. System\01. Builder\Effect\Builder_Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Builder_EffectEvent.cpp">
+      <Filter>07. System\01. Builder\Effect\Builder_EffectEvent</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\UIHover_Image.cpp">
+      <Filter>03. GameObject\UIObjects\02.UI\Image\Dynamic Image\02.HoverImage</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -698,13 +851,7 @@
     <FxCompile Include="..\..\Shaders\Shader_VtxNorTex.hlsl">
       <Filter>04. Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\Shaders\Shader_VtxPos_Particle.hlsl">
-      <Filter>04. Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="..\..\Shaders\Shader_VtxPosTex.hlsl">
-      <Filter>04. Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="..\..\Shaders\Shader_VtxPosTex_Particle.hlsl">
       <Filter>04. Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\..\Shaders\Animation_Defines.hlsl">
@@ -733,6 +880,24 @@
     </FxCompile>
     <FxCompile Include="..\..\Shaders\Shader_VtxInstanceMesh.hlsl">
       <Filter>04. Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Shaders\Shader_CPT_Effect_Particle.hlsl">
+      <Filter>04. Shaders\ComputeShader_Labs</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Shaders\ComShader_BoneCombine.hlsl">
+      <Filter>04. Shaders\ComputeShaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Shaders\ComShader_AnimEvaluate.hlsl">
+      <Filter>04. Shaders\ComputeShaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Shaders\ComShader_AnimBlend.hlsl">
+      <Filter>04. Shaders\ComputeShaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Shaders\ComShader_BoneMesh.hlsl">
+      <Filter>04. Shaders\ComputeShaders\Animation</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Shaders\ComShader_GetBoneCombine.hlsl">
+      <Filter>04. Shaders\ComputeShaders\Animation</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

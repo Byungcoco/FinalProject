@@ -1,17 +1,14 @@
 #pragma once
 #include "BuilderBase.h"
 #include "DataDocument_UI.h"
+#include "GenericUI.h"
 
 NS_BEGIN(Engine)
 class CDataDocumentBase;
 NS_END
 
 NS_BEGIN(Client)
-
 class CCanvas;
-class CUILayer;
-class CGenericUI;
-
 class CBuilder_UI final : public CBuilderBase
 {
 	using Super = CBuilderBase;
@@ -24,15 +21,27 @@ public:
 	virtual HRESULT Build(const CDataDocumentBase& document) override;
 private:
 	HRESULT Create_CanvasDTO(const DTO::TUI_CanvasData& data);
-	HRESULT Create_LayerDTO(const DTO::TUI_LayerData& data);
 	HRESULT Create_GenericUIDTO(const DTO::TUI_GenericUIData& data);
-	HRESULT Create_EventBindDataDTO(const DTO::TUI_EventBindData& data);
+
+	// Data Create
+	HRESULT Create_TextDTO(const DTO::TUI_TextData& data);
+	HRESULT Create_TriggerDTO(const DTO::TUI_TriggerData& data);
+	HRESULT Create_DImageDTO(const DTO::TUI_DImageData& data);
+
+	HRESULT Register_Class(DTO::EUIClassType eClassType, const DTO::TUI_GenericUIData& data, CCanvas* pCanvas);
+	CGenericUI::GENERIC_UI_DESC Make_DefaultInfo(const DTO::TUI_GenericUIData& data, CCanvas* pCanvas);
 
 private:
-	map<_string, CCanvas*> m_MapCanvasCache;
-	map<_string, CUILayer*> m_MapLayerCache;
-	map<_string, CGenericUI* >m_pMapUICache;
+	unordered_map<_string, CCanvas*> m_MapCanvasCache;
+	unordered_map<_string, CGenericUI* >m_pMapUICache;
 
+	// Data Cache 
+	unordered_map<_string, DTO::TUI_TextData> m_MapTextDataCache;
+	unordered_map<_string, DTO::TUI_TriggerData> m_MapTriggerDataCache;
+	unordered_map<_string, DTO::TUI_DImageData> m_MapDImageDataCache;
+
+	vector<CGenericUI*> m_vecTriggerUIs;
+		 
 	Vec2 m_vAspect = {};
 	Vec2 m_vViewportSIze = {};
 

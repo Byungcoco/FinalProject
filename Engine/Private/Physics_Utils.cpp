@@ -3,6 +3,7 @@
 #include "GameInstance.h"
 #include "Physics_ResourceManager.h"
 #include "Physics_Utils.h"
+#include "Physics_QueryFilterCallback.h"
 
 #include "DebugDraw.h"
 
@@ -114,7 +115,7 @@ HRESULT CPhysics_Utils::Render(PxRigidActor* pActor, XMVECTOR color)
 
 			DX::DrawGrid(m_pBatch, XMLoadFloat4(&gridAxis1), XMLoadFloat4(&gridAxis2), origin, numDiv, numDiv);
 		}
-			break;
+		break;
 		case physx::PxGeometryType::eCAPSULE:
 		{
 			PxCapsuleGeometry capsule = geom.capsule();
@@ -144,7 +145,8 @@ HRESULT CPhysics_Utils::Render(PxRigidActor* pActor, XMVECTOR color)
 			break;
 		case physx::PxGeometryType::eTRIANGLEMESH:
 		{
-			DX::DrawMesh(m_pBatch, geom, globalPose, matWorld);
+			if (m_bIsOnMeshDebug)
+				DX::DrawMesh(m_pBatch, geom, globalPose, matWorld);
 		}
 		break;
 		case physx::PxGeometryType::eHEIGHTFIELD:
@@ -159,6 +161,86 @@ HRESULT CPhysics_Utils::Render(PxRigidActor* pActor, XMVECTOR color)
 			break;
 		}
 	}
+
+	m_pBatch->End();
+
+	return S_OK;
+}
+
+HRESULT CPhysics_Utils::Render(const PxGeometry& geom, const PxTransform& transform, XMVECTOR color)
+{
+	m_pEffect->SetWorld(Matrix::Identity);
+	m_pEffect->SetView(m_pGameInstance->Get_ViewMatrix());
+	m_pEffect->SetProjection(m_pGameInstance->Get_ProjMatrix());
+
+	m_pEffect->Apply(m_pContext);
+	m_pContext->IASetInputLayout(m_pInputLayout);
+
+	m_pContext->OMSetDepthStencilState(m_pDSS, 0);
+
+	m_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+
+	m_pBatch->Begin();
+
+		Matrix pxMatrix = PxTransformToXMMatrix(transform);
+		XMMATRIX matWorld = XMLoadFloat4x4(&pxMatrix);
+
+		switch (geom.getType())
+		{
+		case physx::PxGeometryType::eSPHERE:
+		{
+			PxSphereGeometry sphere = static_cast<const PxSphereGeometry&>(geom);
+			BoundingSphere boundingSphere{};
+			boundingSphere.Radius = sphere.radius;
+			boundingSphere.Center = Vec3(transform.p.x, transform.p.y, transform.p.z);
+			DX::Draw(m_pBatch, boundingSphere);
+		}
+		break;
+		case physx::PxGeometryType::ePLANE:
+		break;
+		case physx::PxGeometryType::eCAPSULE:
+		{
+			PxCapsuleGeometry capsule = static_cast<const PxCapsuleGeometry&>(geom);
+			BoundingSphere boundingSphereHead{};
+			boundingSphereHead.Radius = capsule.radius + 0.1f;
+			boundingSphereHead.Center = Vec3(transform.p.x, transform.p.y - 0.1f, transform.p.z);
+			DX::DrawCapsule(m_pBatch, boundingSphereHead, capsule.halfHeight + 0.1f);
+		}
+		break;
+		case physx::PxGeometryType::eBOX:
+		{
+			PxBoxGeometry box = static_cast<const PxBoxGeometry&>(geom);
+			BoundingOrientedBox boundingObb{};
+			boundingObb.Extents = Vec3(box.halfExtents.x, box.halfExtents.y, box.halfExtents.z);
+			boundingObb.Center = Vec3(transform.p.x, transform.p.y, transform.p.z);
+			boundingObb.Orientation = Vec4(transform.q.x, transform.q.y, transform.q.z, transform.q.w);
+			DX::Draw(m_pBatch, boundingObb);
+		}
+		break;
+		case physx::PxGeometryType::eCONVEXCORE:
+			break;
+		case physx::PxGeometryType::eCONVEXMESH:
+			break;
+		case physx::PxGeometryType::ePARTICLESYSTEM:
+			break;
+		case physx::PxGeometryType::eTETRAHEDRONMESH:
+			break;
+		case physx::PxGeometryType::eTRIANGLEMESH:
+			//{
+			//	DX::DrawMesh(m_pBatch, geom, globalPose, matWorld);
+			//}
+			break;
+		case physx::PxGeometryType::eHEIGHTFIELD:
+			break;
+		case physx::PxGeometryType::eCUSTOM:
+			break;
+		case physx::PxGeometryType::eGEOMETRY_COUNT:
+			break;
+		case physx::PxGeometryType::eINVALID:
+			break;
+		default:
+			break;
+		}
 
 	m_pBatch->End();
 
@@ -184,11 +266,57 @@ Matrix CPhysics_Utils::PxTransformToXMMatrix(PxTransform pxTransform)
 
 	Quat vQuat(pxTransform.q.x, pxTransform.q.y, pxTransform.q.z, pxTransform.q.w);
 	Vec4 vTrans(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z, 1.f);
-	
+
 	matQuat = XMMatrixRotationQuaternion(vQuat);
 	matTrans = XMMatrixTranslation(vTrans.x, vTrans.y, vTrans.z);
 
 	return matQuat * matTrans;
+}
+
+PxQuat CPhysics_Utils::GetPureRotation(const Matrix& mat)
+{
+	Vec3 u = Vec3(mat._11, mat._12, mat._13);
+	Vec3 v = Vec3(mat._21, mat._22, mat._23);
+	Vec3 w = Vec3(mat._31, mat._32, mat._33);
+
+	u.Normalize();
+	v.Normalize();
+	w.Normalize();
+
+	PxMat33 pMat(
+		PxVec3(u.x, u.y, u.z),
+		PxVec3(v.x, v.y, v.z),
+		PxVec3(w.x, w.y, w.z)
+	);
+
+	return PxQuat(pMat);
+}
+
+PxVec3 CPhysics_Utils::GetPureScale(const Matrix& mat)
+{
+	Vec3 u = Vec3(mat._11, mat._12, mat._13);
+	Vec3 v = Vec3(mat._21, mat._22, mat._23);
+	Vec3 w = Vec3(mat._31, mat._32, mat._33);
+
+	PxVec3 scale(u.Length(), v.Length(), w.Length());
+
+	if (scale.x < 1e-4f) scale.x = 1.f;
+	if (scale.y < 1e-4f) scale.y = 1.f;
+	if (scale.z < 1e-4f) scale.z = 1.f;
+
+	u.Normalize();
+	v.Normalize();
+	w.Normalize();
+
+	return scale;
+}
+
+Matrix CPhysics_Utils::GetUnrealMatrix(const Matrix& mat)
+{
+	Matrix matBasis = g_UnrealToEngineBasis;
+	Matrix matBasisInv = matBasis.Transpose();
+
+	return matBasis * mat * matBasisInv;
 }
 
 _bool CPhysics_Utils::RayCast()
@@ -201,6 +329,23 @@ _bool CPhysics_Utils::RayCast()
 
 	return m_bRayHit;
 }
+
+_bool CPhysics_Utils::Execute_Overlap(PxGeometry& shape, PxTransform& transform, OUT PxOverlapBuffer& hit, PxQueryFilterData& filterData, PxQueryFilterCallback* filterCallback)
+{
+	return m_pScene->overlap(shape, transform, hit, filterData, filterCallback);
+}
+
+CPhysics_QueryFilterCallback* CPhysics_Utils::GetQueryFilterCallback()
+{
+	return CPhysics_QueryFilterCallback::Create();
+}
+
+#ifdef _DEBUG
+void CPhysics_Utils::SetMeshDebugState()
+{
+	m_bIsOnMeshDebug = !m_bIsOnMeshDebug;
+}
+#endif
 
 CPhysics_Utils* CPhysics_Utils::Create(ID3D11Device* pDevice, ID3D11DeviceContext* pContext, PxPhysics* pPhysics, PxScene* pScene)
 {

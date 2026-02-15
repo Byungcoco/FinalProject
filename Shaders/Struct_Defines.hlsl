@@ -59,18 +59,21 @@ struct VS_IN_POS_TEX_PARTICLE
     float3 vPosition : POSITION;
     float2 vUV : TEXCOORD0;
     
-    float4 vRight : TEXCOORD1;
-    float4 vUp : TEXCOORD2;
-    float4 vLook : TEXCOORD3;
-    float4 vTranslation : TEXCOORD4;
-    float2 vLifeTime : TEXCOORD5;
+    //float4 vRight : TEXCOORD1;
+    //float4 vUp : TEXCOORD2;
+    //float4 vLook : TEXCOORD3;
+    //float4 vTranslation : TEXCOORD4;
+    //float2 vLifeTime : TEXCOORD5;
 };
 
 struct VS_IN_POS_GS_PARTICLE
 {
     float3 vPosition : POSITION;
-    row_major float4x4 matTransform : WORLD;
-    float2 vLifeTime : TEXCOORD0;
+    //row_major float4x4 matTransform : WORLD;
+    //float2 vLifeTime : TEXCOORD0;
+    
+    // slot 1
+    uint vInstID : TEXCOORD0;
 };
 
 struct VS_IN_INST_MESH_PARTICLE
@@ -82,9 +85,9 @@ struct VS_IN_INST_MESH_PARTICLE
     float3 vBinormal : BINORMAL;
     float2 vUV : TEXCOORD0;
     
-    // Slot 1
-    row_major float4x4 matTransform : WORLD;
-    float2 vLifeTime : TEXCOORD1;
+    //// Slot 1
+    //row_major float4x4 matTransform : WORLD;
+    uint   vInstID : TEXCOORD1;
 };
 
 struct VS_IN_INST_MESH
@@ -98,6 +101,10 @@ struct VS_IN_INST_MESH
     
     // Slot 1
     row_major float4x4 matTransform : WORLD;
+    
+    
+    // GPU 가 알아서 추가해주는 Instance 번호
+    uint iCurInstanceID : SV_InstanceID;
 };
 
 
@@ -127,7 +134,6 @@ struct VS_OUT_POS_TEX
 {
     float4 vPosition : SV_POSITION;
     float2 vUV : TEXCOORD0;
-    float fHP : TEXCOORD1;
 };
 
 struct VS_OUT_POS_TEX_NOR
@@ -162,6 +168,8 @@ struct VS_OUT_INST_MESH
     
     float4 vWorldPos : TEXCOORD1;
     float4 vProjPos : TEXCOORD2;
+
+    uint iCurInstanceID : TEXCOORD3;
 };
 
 struct VS_OUT_SKELETON
@@ -261,7 +269,6 @@ struct PS_IN_POS_TEX
 {
     float4 vPosition : SV_POSITION;
     float2 vUV : TEXCOORD0;
-    float fHP : TEXCOORD1;
 };
 
 struct PS_IN_POS_TEX_NOR
@@ -296,6 +303,8 @@ struct PS_IN_INST_MESH
     
     float4 vWorldPos : TEXCOORD1;
     float4 vProjPos : TEXCOORD2;
+    uint iCurInstanceID : TEXCOORD3;
+   
 };
 
 struct PS_IN_SKELETON
@@ -340,13 +349,21 @@ struct PS_OUT
 struct PS_OUT_LIGHT
 {
     float4 vShade : SV_TARGET0;
+    float4 vSpecular : SV_TARGET1;
+};
+
+struct PS_OUT_AO
+{
+    float4 vAO : SV_TARGET0;
 };
 
 struct PS_OUT_DEFFERED
 {
     float4 vDiffuse : SV_TARGET0;
     float3 vNormal : SV_TARGET1;
-    float4 vDepth : SV_TARGET2;
+    float4 vSpecularMask : SV_TARGET2;
+    float4 vDepth : SV_TARGET3;
+    uint4 vObjectInfo : SV_Target4;
 };
 
 struct PS_OUT_BAKESHADOW
@@ -354,9 +371,28 @@ struct PS_OUT_BAKESHADOW
     float4 vDepth : SV_TARGET0;
 };
 
+struct PS_OUT_HDR
+{
+    float4 vColor : SV_TARGET0;
+};
+
+struct PS_OUT_BLOOM
+{
+    float4 vColor : SV_TARGET0;
+};
+
 struct PS_OUT_BACKBUFFER
 {
     float4 vColor : SV_TARGET0;
 };
 
+////////////////////
+// Compute Shader//
+//////////////////
+
+struct VTXPARTICLE
+{
+    row_major float4x4 matTransform;
+    float2 vLifeTime;
+};
 #endif

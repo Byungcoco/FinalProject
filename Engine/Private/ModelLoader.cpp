@@ -261,6 +261,17 @@ HRESULT CModelLoader::Read_Model(EModelType eType, vector<CBone*>* vecBones, vec
 				meshDesc.spanOffsetMatrices = std::span<Matrix>(vecImportOffsetMatrices.data(), vecImportOffsetMatrices.size());
 			}
 
+			// MinMax
+			meshDesc.iMinMaxCount = pFileUtil->Read<_uint>();
+			vector<Vec3> vecImportMinMax(meshDesc.iMinMaxCount);
+			if (meshDesc.iMinMaxCount > 0)
+			{
+				void* pMinMax(vecImportMinMax.data());
+				pFileUtil->Read(&pMinMax, sizeof(Vec3)* meshDesc.iMinMaxCount);
+				meshDesc.spanMinMax = std::span<Vec3>(vecImportMinMax.data(), vecImportMinMax.size());
+			}
+
+
 			if (m_wstrModelName.ends_with(L"_COL") || m_wstrModelName.starts_with(L"COL_"))
 				meshDesc.bSaveNormal = true;
 
@@ -345,6 +356,7 @@ HRESULT CModelLoader::Read_Animation(vector<CModelAnimation*>* vecAnimations, CM
 		{
 			desc.bRootAni	= pData->bRootAni;
 			desc.bMixAni	= pData->bMixAni;
+			desc.iRootBondIndex = pData->iRootBoneIndex;
 		}
 
 		vector<CChannel*> vecChannels;

@@ -163,6 +163,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\ActionState.cpp" />
+    <ClCompile Include="..\Private\ActiveAttackOverlap.cpp" />
     <ClCompile Include="..\Private\AsTypes.cpp" />
     <ClCompile Include="..\Private\Base.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
@@ -178,6 +179,13 @@
     <ClCompile Include="..\Private\Camera.cpp" />
     <ClCompile Include="..\Private\CameraMan.cpp" />
     <ClCompile Include="..\Private\Camera_Manager.cpp" />
+    <ClCompile Include="..\Private\DataDocument_EffectEvent.cpp" />
+    <ClCompile Include="..\Private\ComputeShader.cpp" />
+    <ClCompile Include="..\Private\DataDocument_AttackOverlap.cpp" />
+    <ClCompile Include="..\Private\DataStruct_AttackOverlap.cpp" />
+    <ClCompile Include="..\Private\DataStruct_EffectEvent.cpp" />
+    <ClCompile Include="..\private\FxEffectAsset.cpp" />
+    <ClCompile Include="..\private\FxShaderVariant.cpp" />
     <ClCompile Include="..\Private\InstanceMesh.cpp" />
     <ClCompile Include="..\Private\DataDocument_Effect.cpp" />
     <ClCompile Include="..\Private\Cell.cpp" />
@@ -224,7 +232,7 @@
     <ClCompile Include="..\Private\Graphic_Device.cpp" />
     <ClCompile Include="..\Private\Importer.cpp" />
     <ClCompile Include="..\Private\Input_Manager.cpp" />
-    <ClCompile Include="..\Private\IUIActionForMe.cpp" />
+    <ClCompile Include="..\private\Bounds.cpp" />
     <ClCompile Include="..\private\json_forward.cpp" />
     <ClCompile Include="..\Private\Layer.cpp" />
     <ClCompile Include="..\Private\Level.cpp" />
@@ -247,12 +255,18 @@
     <ClCompile Include="..\private\ObjectPool_Manager.cpp" />
     <ClCompile Include="..\Private\Object_Manager.cpp" />
     <ClCompile Include="..\private\ObjectPool.cpp" />
+    <ClCompile Include="..\private\Octree_Manager.cpp" />
     <ClCompile Include="..\Private\PartObject.cpp" />
+    <ClCompile Include="..\Private\PhysicsAttackOverlap.cpp" />
     <ClCompile Include="..\Private\PhysicsCCT.cpp" />
     <ClCompile Include="..\Private\PhysicsCollider.cpp" />
     <ClCompile Include="..\Private\PhysicsRigidBody.cpp" />
     <ClCompile Include="..\Private\Physics_ActorFactory.cpp" />
+    <ClCompile Include="..\Private\Physics_NPCHitReport.cpp" />
+    <ClCompile Include="..\Private\Physics_QueryFilterCallback.cpp" />
+    <ClCompile Include="..\Private\Physics_UserHitReport.cpp" />
     <ClCompile Include="..\Private\Physics_CCTManager.cpp" />
+    <ClCompile Include="..\Private\Physics_FilterEventCallback.cpp" />
     <ClCompile Include="..\Private\Physics_Module.cpp" />
     <ClCompile Include="..\Private\Physics_ResourceManager.cpp" />
     <ClCompile Include="..\Private\Physics_ShapeFactory.cpp" />
@@ -266,8 +280,10 @@
     <ClCompile Include="..\Private\ResourceBase.cpp" />
     <ClCompile Include="..\Private\Resource_Manager.cpp" />
     <ClCompile Include="..\Private\Shader.cpp" />
+    <ClCompile Include="..\private\ShaderAsset_Manager.cpp" />
     <ClCompile Include="..\Private\Sound_Manager.cpp" />
     <ClCompile Include="..\Private\StateBase.cpp" />
+    <ClCompile Include="..\Private\StructuredBuffer.cpp" />
     <ClCompile Include="..\Private\Texture.cpp" />
     <ClCompile Include="..\Private\TextureBase.cpp" />
     <ClCompile Include="..\private\ThreadWorker.cpp" />
@@ -299,6 +315,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\ActionState.h" />
+    <ClInclude Include="..\Public\ActiveAttackOverlap.h" />
     <ClInclude Include="..\Public\AsTypes.h" />
     <ClInclude Include="..\Public\Base.h" />
     <ClInclude Include="..\Public\Bone.h" />
@@ -311,7 +328,14 @@
     <ClInclude Include="..\Public\Camera.h" />
     <ClInclude Include="..\Public\CameraMan.h" />
     <ClInclude Include="..\Public\Camera_Manager.h" />
+    <ClInclude Include="..\Public\DataDocument_EffectEvent.h" />
+    <ClInclude Include="..\Public\DataDocument_AttackOverlap.h" />
+    <ClInclude Include="..\Public\DataStruct_AttackOverlap.h" />
+    <ClInclude Include="..\Public\DataStruct_EffectEvent.h" />
+    <ClInclude Include="..\public\FxEffectAsset.h" />
+    <ClInclude Include="..\public\FxShaderVariant.h" />
     <ClInclude Include="..\Public\InstanceMesh.h" />
+    <ClInclude Include="..\Public\ComputeShader.h" />
     <ClInclude Include="..\Public\DataDocument_Effect.h" />
     <ClInclude Include="..\Public\Cell.h" />
     <ClInclude Include="..\Public\Channel.h" />
@@ -358,7 +382,7 @@
     <ClInclude Include="..\Public\Graphic_Device.h" />
     <ClInclude Include="..\Public\Importer.h" />
     <ClInclude Include="..\Public\Input_Manager.h" />
-    <ClInclude Include="..\Public\IUIActionForMe.h" />
+    <ClInclude Include="..\public\Bounds.h" />
     <ClInclude Include="..\public\json_forward.h" />
     <ClInclude Include="..\Public\Layer.h" />
     <ClInclude Include="..\Public\Level.h" />
@@ -378,12 +402,18 @@
     <ClInclude Include="..\public\ObjectPool_Manager.h" />
     <ClInclude Include="..\Public\Object_Manager.h" />
     <ClInclude Include="..\public\ObjectPool.h" />
+    <ClInclude Include="..\public\Octree_Manager.h" />
     <ClInclude Include="..\Public\PartObject.h" />
+    <ClInclude Include="..\Public\PhysicsAttackOverlap.h" />
     <ClInclude Include="..\Public\PhysicsCCT.h" />
     <ClInclude Include="..\Public\PhysicsCollider.h" />
     <ClInclude Include="..\Public\PhysicsRigidBody.h" />
     <ClInclude Include="..\Public\Physics_ActorFactory.h" />
+    <ClInclude Include="..\Public\Physics_NPCHitReport.h" />
+    <ClInclude Include="..\Public\Physics_QueryFilterCallback.h" />
+    <ClInclude Include="..\Public\Physics_UserHitReport.h" />
     <ClInclude Include="..\Public\Physics_CCTManager.h" />
+    <ClInclude Include="..\Public\Physics_FilterEventCallback.h" />
     <ClInclude Include="..\Public\Physics_Module.h" />
     <ClInclude Include="..\Public\Physics_ResourceManager.h" />
     <ClInclude Include="..\Public\Physics_ShapeFactory.h" />
@@ -397,8 +427,10 @@
     <ClInclude Include="..\Public\ResourceBase.h" />
     <ClInclude Include="..\Public\Resource_Manager.h" />
     <ClInclude Include="..\Public\Shader.h" />
+    <ClInclude Include="..\public\ShaderAsset_Manager.h" />
     <ClInclude Include="..\Public\Sound_Manager.h" />
     <ClInclude Include="..\Public\StateBase.h" />
+    <ClInclude Include="..\Public\StructuredBuffer.h" />
     <ClInclude Include="..\Public\Texture.h" />
     <ClInclude Include="..\Public\TextureBase.h" />
     <ClInclude Include="..\public\ThreadPool.h" />

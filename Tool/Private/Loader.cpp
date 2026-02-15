@@ -10,6 +10,7 @@
 #include "Model.h"
 #include "Collider.h"
 #include "Shader.h"
+#include "Bounds.h"
 #include "MonoBehaviour.h"
 #include "Camera.h"
 #include "VIBuffer_Line_Color.h"
@@ -17,17 +18,18 @@
 //=================
 // Object
 //=================
-#include "StaticModel.h"
-#include "InstanceModel.h"
 #include "Tool_ContainerObject.h"
 #include "Tool_PartObject.h"
+#include "AnimObj.h"
 //=================
 // UI
 //=================
 #include "ToolCanvas.h"
-#include "ToolLayer.h"
 #include "ToolUI.h"
-
+//=================
+// Map
+//=================
+#include "MapObject.h"
 //=================
 // Resource
 //=================
@@ -129,26 +131,30 @@ HRESULT CLoader::Loading_For_Map()
 	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::MAP), L"Prototype_Component_Collider_AABB", CCollider::Create(m_pDevice, m_pDeviceContext, EColliderType::AABB));
 	// For. Prototype_Component_Collider_OBB
 	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::MAP), L"Prototype_Component_Collider_OBB", CCollider::Create(m_pDevice, m_pDeviceContext, EColliderType::OBB));
+	// For. Prototype_Component_Bounds
+	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::MAP), L"Prototype_Component_Bounds", CBounds::Create(m_pDevice, m_pDeviceContext));
 
 
 
+	/* Model Prototype */
+	CUEMapDataLoader* pMapDataLoader = CUEMapDataLoader::Create(m_pDevice,m_pDeviceContext);
+	if (pMapDataLoader == nullptr) return E_FAIL;
+	if (FAILED(pMapDataLoader->Make_Prototype(ENUM_TO_UINT(ELevelType::MAP), L"../../Resources/Models/Map/")))
+	{
+		Safe_Release(pMapDataLoader);
+		return E_FAIL;
+	}
+	Safe_Release(pMapDataLoader);
 
-	///* Map Data Model */
-	//CUEMapDataLoader* pMapDataLoader = CUEMapDataLoader::Create(m_pDevice,m_pDeviceContext);
-	//if (pMapDataLoader == nullptr) return E_FAIL;
-	//if (FAILED(pMapDataLoader->Make_Prototype(L"../../Resources/Models/Map/DevScene/Model/")))
-	//{
-	//	Safe_Release(pMapDataLoader);
-	//	return E_FAIL;
-	//}
-	//Safe_Release(pMapDataLoader);
+
+	/* Texture Prototype */
+	//if(FAILED())
 
 
 	//=================
 	// CGameObject
 	//=================
-	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::MAP), L"Prototype_GameObject_StaticModel",	 CStaticModel::Create(EToolObjectType::MAPOBJECT, m_pDevice, m_pDeviceContext));
-	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::MAP), L"Prototype_GameObject_InstanceModel", CInstanceModel::Create(EToolObjectType::MAPOBJECT, m_pDevice, m_pDeviceContext));
+	m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::MAP), L"Prototype_GameObject_MapObject", CMapObject::Create(EToolObjectType::MAPOBJECT,m_pDevice, m_pDeviceContext));
 
 
 
@@ -162,12 +168,16 @@ HRESULT CLoader::Loading_For_Animation()
 	Matrix matPreTransformScale = Matrix::CreateScale(0.01f, 0.01f, 0.01f);
 	// For. Prototype_Component_Model
 	{
-		CModel::MODEL_ORIGIN_DESC desc = {};
-		desc.eType = EModelType::ANIM;
-		desc.iPrototypeLevelIndex = ENUM_TO_UINT(ELevelType::ANIMATION);
-		desc.pMatPreTransform = &matPreTransformScale;
-		desc.wstrModelFolderName = L"PlayerMoon";
-		m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::ANIMATION), L"Prototype_Component_Model_PlayerMoon", CModel::Create(m_pDevice, m_pDeviceContext, &desc));
+		//CModel::MODEL_ORIGIN_DESC desc = {};
+		//desc.eType = EModelType::ANIM;
+		//desc.iPrototypeLevelIndex = ENUM_TO_UINT(ELevelType::ANIMATION);
+		//desc.pMatPreTransform = &matPreTransformScale;
+		//desc.wstrModelFolderName = L"PlayerMoon";
+		//m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::ANIMATION), L"Prototype_Component_Model_PlayerMoon", CModel::Create(m_pDevice, m_pDeviceContext, &desc));
+	}
+
+	{
+		m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::ANIMATION), L"Prototype_GameObject_AnimObject", CAnimObj::Create(EToolObjectType::ANIMATION, m_pDevice, m_pDeviceContext));
 	}
 
 	m_isFinished = true;
@@ -242,12 +252,16 @@ HRESULT CLoader::Loading_For_Effect()
 	}
 
 	/* Effect Data Model */
+	wstring basicBoxPath = L"../../Resources/Models/Map/Level/BasicShapes/Model/";
+
 	CUEMapDataLoader* pMapDataLoader = CUEMapDataLoader::Create(m_pDevice, m_pDeviceContext);
 	if (pMapDataLoader == nullptr) return E_FAIL;
 	if (FAILED(pMapDataLoader->Make_Prototype(ENUM_TO_UINT(ELevelType::EFFECT), L"../../Resources/Models/Effect_FBX/blade/Model/")))
 		return E_FAIL;
+	if (FAILED(pMapDataLoader->Make_Prototype(ENUM_TO_UINT(ELevelType::EFFECT), basicBoxPath)))
+		return E_FAIL;
 	Safe_Release(pMapDataLoader);
-
+	
 	Loading_Textures_Effect(L"../../Resources/Textures/Effect");
 
 	m_isFinished = true;
@@ -266,16 +280,20 @@ HRESULT CLoader::Loading_For_UI()
 	//=================
 	// Resource Component
 	//=================
-
-	// For. Prototype_Component_Button_Test_Texture
-	{
-		CTexture::TEXTURE_COMPONENT_ORIGIN_DESC textureDesc = {};
-		textureDesc.iTextureCount = 22;
-		textureDesc.wstrTexturePath = L"../../Resources/Textures/UI/%d.png";
-		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::UI), L"Prototype_Component_UI_Texture", CTexture::Create(&textureDesc))))
-			return E_FAIL;
-	}
-
+	if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Playable/")))
+		return E_FAIL;
+	if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Menu/")))
+		return E_FAIL;
+	if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Battle/")))
+		return E_FAIL;
+	if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Key/")))
+		return E_FAIL;
+	if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/WeaponIcon/")))
+		return E_FAIL;
+	if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/SM_MAP/")))
+		return E_FAIL;
+	if (FAILED(Loading_Textures(L"../../Resources/Textures/UI/Map/")))
+		return E_FAIL;
 
 	//=================
 	// UI Objects
@@ -284,11 +302,6 @@ HRESULT CLoader::Loading_For_UI()
 	// For. Prototype_UI_Canvas
 	{
 		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::UI), g_wszPrototypeTagCanvas, CToolCanvas::Create(EToolObjectType::UI, m_pDevice, m_pDeviceContext))))
-			return E_FAIL;
-	}
-	// For. Prototype_UI_Layer
-	{
-		if (FAILED(m_pGameInstance->Add_Prototype(ENUM_TO_UINT(ELevelType::UI), g_wszPrototypeTagLayer, CToolLayer::Create(EToolObjectType::UI, m_pDevice, m_pDeviceContext))))
 			return E_FAIL;
 	}
 	// For. Prototype_UI_UI
@@ -320,12 +333,17 @@ HRESULT CLoader::Loading_Textures(const wstring& wstrFolder)
 			++iFileCount;
 		}
 	}
-
+	/* 바탕화면 경로(C:\Users\...\Desktop) 쪽은 특히 desktop.ini가 흔합니다. 절대 바탕화면에 프로젝트를 두지마 */
 	for (const auto& entry : std::filesystem::directory_iterator(wstrFolder))
 	{
 		wstring wstrFileName = { L"" };
+		_wstring ext = { L"" };
 		if (entry.is_regular_file())
 		{
+			ext = entry.path().extension().wstring();
+			if (ext == L".ini")
+				continue;
+
 			wstrFileName = entry.path().filename().lexically_normal().stem();
 			CTextureBase::RESOURCE_BASE_DESC desc = {};
 			desc.wstrName = wstrFileName;
@@ -359,6 +377,44 @@ HRESULT CLoader::Loading_Textures_Effect(const wstring& wstrFolder)
 
 			wstring wstrFileName = path.stem().wstring();
 
+			wstring wstrFolderName = path.parent_path().filename().wstring();
+			wstring wstrResourceTag = L"Texture_" + wstrFileName;
+
+			CTextureBase::RESOURCE_BASE_DESC desc = {};
+			desc.wstrName = wstrFileName;
+			desc.wstrPath = path.wstring();
+
+			if (FAILED(m_pGameInstance->Add_Resource(wstrResourceTag,
+				CTextureBase::Create(m_pDevice, m_pDeviceContext, &desc))))
+			{
+				continue;
+			}
+		}
+	}
+
+	return S_OK;
+}
+
+HRESULT CLoader::Loading_Textures_Map(const wstring& wstrFolder)
+{
+	namespace fs = std::filesystem;
+
+	if (fs::exists(wstrFolder) == false)
+		return E_FAIL;
+
+	for (const auto& entry : fs::recursive_directory_iterator(wstrFolder))
+	{
+		if (entry.is_regular_file())
+		{
+			auto path = entry.path();
+
+			wstring wstrExtension = path.extension().wstring();
+			for (auto& c : wstrExtension) c = towlower(c);
+
+			if (wstrExtension == L".hdr")
+				continue;
+
+			wstring wstrFileName = path.stem().wstring();
 			wstring wstrFolderName = path.parent_path().filename().wstring();
 			wstring wstrResourceTag = L"Texture_" + wstrFileName;
 

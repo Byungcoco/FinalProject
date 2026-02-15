@@ -32,9 +32,9 @@ HRESULT CUIObject::Initialize(void* pArg)
 
 	m_isVisible = pDesc->isInitVisible;
 	m_eCategory = (pDesc->isAlpha ? RENDER_CATEGORY::BLENDUI : RENDER_CATEGORY::UI);
-
 	m_fX = pDesc->fX;
 	m_fY = pDesc->fY;
+	m_fZ = pDesc->fZ;
 	m_fWidth = 1.f;
 	m_fHeight = 1.f;
 
@@ -50,6 +50,10 @@ HRESULT CUIObject::Initialize(void* pArg)
 
 	if (FAILED(Add_Component<CShader>(0, L"Prototype_Component_Shader_VtxPosTex", pArg)))
 		return E_FAIL;
+
+	m_isPreVisible	= m_isVisible;
+	m_isPreActive	= m_isActive;
+	m_isPreInteract = m_isInteract;
 
 	return S_OK;
 }
@@ -73,17 +77,65 @@ void CUIObject::Update_Priority(const _float fTimeDelta)
 void CUIObject::Update(const _float fTimeDelta)
 {
 	Super::Update(fTimeDelta);
+
+	if (m_isPreActive != m_isActive)
+	{
+		m_isPlaying_ActiveEvent = true;
+
+		if (m_isActive)
+			Initialize_Activate_Event();
+		else
+			Initialize_InActivate_Event();
+	}
+	if (m_isPreInteract != m_isInteract)
+	{
+		m_isPlaying_InteractEvent = true;
+
+		if (m_isInteract)
+			Initialize_Interactable_Event();
+		else
+			Initialize_NonInteractable_Event();
+	}
+	if (m_isPreVisible != m_isVisible)
+	{
+		m_isPlaying_VisibleEvent = true;
+
+		if (m_isVisible)
+			Initialize_Visible_Event();
+		else
+			Initialize_InVisible_Event();
+	}
+
+	m_isPreActive	= m_isActive;
+	m_isPreInteract = m_isInteract;
+	m_isPreVisible	= m_isVisible;
 }
 
 void CUIObject::Update_Late(const _float fTimeDelta)
 {
 	Super::Update_Late(fTimeDelta);
+
+	if (m_isPlaying_ActiveEvent)
+	{
+		if (m_isActive)		m_isPlaying_ActiveEvent = !Tick_Activate_Event(fTimeDelta);
+		else				m_isPlaying_ActiveEvent = !Tick_InActivate_Event(fTimeDelta);
+
+	}
+	if (m_isPlaying_InteractEvent)
+	{
+		if (m_isInteract)	m_isPlaying_InteractEvent = !Tick_Interactable_Event(fTimeDelta);
+		else				m_isPlaying_InteractEvent = !Tick_NonInteractable_Event(fTimeDelta);
+	}
+	if (m_isPlaying_VisibleEvent)
+	{
+		if (m_isVisible)	m_isPlaying_VisibleEvent = !Tick_Visible_Event(fTimeDelta);
+		else				m_isPlaying_VisibleEvent = !Tick_InVisible_Event(fTimeDelta);
+	}
 }
 
 void CUIObject::Ready_Before_Render(const _float fTimeDelta)
 {
 	Super::Ready_Before_Render(fTimeDelta);
-	m_pGameInstance->Push_RenderObject(RENDER_CATEGORY::UI, this);
 }
 
 HRESULT CUIObject::Render()

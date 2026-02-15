@@ -4,6 +4,7 @@
 #include "Font_Manager.h"
 #include "Event_Manager.h"
 #include "ObjectPool_Manager.h"
+#include "Octree_Manager.h"
 #include "GameDataManager.h"
 #include "Collision_Manager.h"
 #include "Constant_Buffer.h"
@@ -18,6 +19,7 @@
 #include "CameraMan.h"
 #include "Camera_Manager.h"
 #include "Level_Manager.h"
+#include "ShaderAsset_Manager.h"
 #include "DataRepository.h"
 #include "Input_Manager.h"
 #include "Graphic_Device.h"
@@ -87,10 +89,13 @@ HRESULT CGameInstance::Initialize_Engine(const ENGINE_DESC& Engine_Desc, _Inout_
 	if (!(m_pSound_Manager = CSound_Manager::Create()))
 		return E_FAIL;
 
+	if (!(m_pShaderAsset_Manager = CShaderAsset_Manager::Create(*ppDevice, *ppContext)))
+		return E_FAIL;
+
 	if (!(m_pLight_Manager = CLight_Manager::Create(*ppDevice, *ppContext)))
 		return E_FAIL;
 
-	if (FAILED(m_pRender_Manager->Set_Components()))
+	if (FAILED(m_pRender_Manager->Set_ShaderResources()))
 		return E_FAIL;
 
 	if (!(m_pFont_Manager = CFont_Manager::Create(*ppDevice, *ppContext)))
@@ -112,6 +117,9 @@ HRESULT CGameInstance::Initialize_Engine(const ENGINE_DESC& Engine_Desc, _Inout_
 		return E_FAIL;
 
 	if (!(m_pUIAction_Registry = CUIAction_Registry::Create()))
+		return E_FAIL;
+
+	if (!(m_pOctree_Manager = COctree_Manager::Create()))
 		return E_FAIL;
 
 	return S_OK;
@@ -206,13 +214,13 @@ void CGameInstance::Clear(_uint iLevelID)
 {
 	m_pDataRepository->Clear(iLevelID);
 	m_pObjectPool_Manager->All_Despawn_StaticLevel();
+	m_pOctree_Manager->Clear();
 	m_pObject_Manager->Clear(iLevelID);
 	m_pObjectPool_Manager->Clear(iLevelID);
 	m_pPrototype_Manager->Clear(iLevelID);
 	m_pInput_Manager->Clear();
 	m_pCamera_Manager->Clear();
 	m_pEventBus_Manager->Clear_All();
-	m_pFrustrum->Clear();
 	m_pSound_Manager->StopAll();
 }
 
@@ -275,9 +283,18 @@ const Vec3& CGameInstance::Picking_Get_RayDir(bool isLocal) const
 {
 	return m_pPicking->Get_RayDir(isLocal);
 }
-
-
 #pragma endregion
+
+#pragma region SHADERASSET_MANAGER
+CFxEffectAsset* CGameInstance::GetOrCreate_FxEffectAsset(const path& filePath)
+{
+	return m_pShaderAsset_Manager->GetOrCreate_FxEffectAsset(filePath);
+}
+CFxShaderVariant* CGameInstance::GetOrCreate_Variant(const path& filePath, EVtxLayout eVertexLayoutID)
+{
+	return m_pShaderAsset_Manager->GetOrCreate_Variant(filePath, eVertexLayoutID);
+}
+#pragma endregion 
 
 #pragma region LEVEL_MANAGER
 HRESULT CGameInstance::Immediately_ChangeLevel(_uint iNewLevelID, CLevel* pNewLevel)
@@ -323,7 +340,10 @@ _float CGameInstance::Get_TimeDelta(const _tchar* pTimerTag)
 {
 	return m_pTimer_Manager->Get_TimeDelta(pTimerTag);
 }
-
+void CGameInstance::Set_MaxTimeDelta(const _tchar* pTimerTag, _float fMaxTimeDelta)
+{
+	m_pTimer_Manager->Set_MaxTimeDelta(pTimerTag, fMaxTimeDelta);
+}
 HRESULT CGameInstance::Add_Timer(const _tchar* pTimerTag)
 {
 	return m_pTimer_Manager->Add_Timer(pTimerTag);
@@ -395,24 +415,19 @@ void CGameInstance::Request_AddObject(_uint iCloneLevelIndex, const wstring& wst
 void CGameInstance::Request_AddObject(_uint iPrototypeLevelIndex, const wstring& wstrPrototypeTag, _uint iCloneLevelIndex, const wstring& wstrLayerTag, void* pArg, std::function<void(CGameObject*)> onSpawnedCallback)
 {
 	CGameObject* pResult = { nullptr };
-
-	// Pool쪽 먼저 체크
-	pResult = m_pObjectPool_Manager->Spawn(iCloneLevelIndex, wstrPrototypeTag, pArg);
-
-	// Pool에 없으면 Clone
-	if (pResult == nullptr)
-		pResult = static_cast<CGameObject*>(m_pPrototype_Manager->Clone_Prototype(EPrototypeType::GAMEOBJECT, iPrototypeLevelIndex, wstrPrototypeTag, pArg));
+	pResult = static_cast<CGameObject*>(m_pPrototype_Manager->Clone_Prototype(EPrototypeType::GAMEOBJECT, iPrototypeLevelIndex, wstrPrototypeTag, pArg));
 
 	if (pResult)
-	{
-		SpawnEventDesc desc = {};
-		desc.iCloneLevelIndex = static_cast<_int>(iCloneLevelIndex);
-		desc.wstrLayerTag = wstrLayerTag;
-		desc.pClone = pResult;
-		if(onSpawnedCallback)
-			desc.callback = std::move(onSpawnedCallback);
-		m_pEvent_Manager->Push_SpawnEvent(desc);
-	}
+		Request_AddObject(iCloneLevelIndex, wstrLayerTag, pResult, onSpawnedCallback);
+}
+void CGameInstance::Request_AddObject(_uint iPoolLevelIndex, const wstring& wstrPoolTag, _uint iSpawnLevelIndex, void* pArg, std::function<void(CGameObject*)> onSpawnedCallback)
+{
+	CGameObject* pResult = { nullptr };
+	wstring wstrLayerTag = { L"" };
+	pResult = m_pObjectPool_Manager->Spawn(iPoolLevelIndex, wstrPoolTag, wstrLayerTag, pArg);
+
+	if(pResult)
+		Request_AddObject(iSpawnLevelIndex, wstrLayerTag, pResult, onSpawnedCallback);
 }
 void CGameInstance::Request_DeleteGameObject(_uint iCloneLevelIndex, const wstring& wstrLayerTag, CGameObject* pGo)
 {
@@ -423,7 +438,7 @@ void CGameInstance::Request_DeleteGameObject(_uint iCloneLevelIndex, const wstri
 	desc.iClonedLevelIndex = iCloneLevelIndex;
 	desc.wstrLayerTag = wstrLayerTag;
 	desc.pGo = pGo;
-	m_pEvent_Manager->Push_DespawnEvent(desc);	
+	m_pEvent_Manager->Push_DespawnEvent(desc);
 }
 CGameObject* CGameInstance::Get_GameObject(_uint iLevelIndex, const wstring& wstrLayerTag, _uint iObjectIndex)
 {
@@ -677,7 +692,26 @@ const CDataDocumentBase* CGameInstance::Get_Document(_uint iLevelID, DTO::ECateg
 }
 #pragma endregion
 
+#pragma region OCTREE_MANAGER
+HRESULT CGameInstance::Register_Octree(CGameObject* pGo, RENDER_CATEGORY eCategory, const BoundingBox& AABB, _bool bDynamic)
+{
+	OCTREE_ENTRY* pEntry = m_pOctree_Manager->Register(pGo, eCategory, AABB, bDynamic);
+	if (pEntry == nullptr)
+		return E_FAIL;
 
+	return S_OK;
+}
+
+void CGameInstance::Unregister(CGameObject* pGo)
+{
+	m_pOctree_Manager->Unregister(pGo);
+}
+
+HRESULT CGameInstance::Ready_Octree(const OCTREE_DESC& desc)
+{
+	return m_pOctree_Manager->Initialize(desc);
+}
+#pragma endregion
 void CGameInstance::Push_RenderObject(RENDER_CATEGORY eCategory, CGameObject* pGO)
 {
 	m_pRender_Manager->Push_RenderObject(eCategory, pGO);
@@ -726,10 +760,11 @@ HRESULT CGameInstance::Add_Font(const _wstring& strFontTag, const _tchar* pFontF
 {
 	return m_pFont_Manager->Add_Font(strFontTag, pFontFilePath);
 }
-HRESULT CGameInstance::Draw_Text(const _wstring& strFontTag, const _tchar* pText, const Vec2& vPosition, Vec4 vColor)
+HRESULT CGameInstance::Draw_Text(const _wstring& strFontTag, const _tchar* pText, const Vec2& vPosition, Vec4 vColor, const _float fRotate, const _float fScale)
 {
-	return m_pFont_Manager->Draw_Text(strFontTag, pText, vPosition, vColor);
+	return m_pFont_Manager->Draw_Text(strFontTag, pText, vPosition, vColor, fRotate, fScale);
 }
+
 #pragma endregion
 
 
@@ -744,31 +779,57 @@ void CGameInstance::Destroy_Engine()
 	Safe_Release(m_pFont_Manager);
 	Safe_Release(m_pRenderTarget_Manager);
 	Safe_Release(m_pCamera_Manager);
+	Safe_Release(m_pOctree_Manager);
 	Safe_Release(m_pObject_Manager);
 	Safe_Release(m_pObjectPool_Manager);
 	Safe_Release(m_pCollision_Manager);
 	Safe_Release(m_pPicking);
 	Safe_Release(m_pGameData_Manager);
 	Safe_Release(m_pPrototype_Manager);
-	Safe_Release(m_pPhysics_Module);
 	Safe_Release(m_pLevel_Manager);
 	Safe_Release(m_pLight_Manager);
 	Safe_Release(m_pEvent_Manager);
 	Safe_Release(m_pEventBus_Manager);
+	Safe_Release(m_pShaderAsset_Manager);
 	Safe_Release(m_pResource_Manager);
+	Safe_Release(m_pPhysics_Module);
 	Safe_Release(m_pGraphic_Device);
 
 	CGameInstance::GetInstance()->DestroyInstance();
 }
 
 #pragma region FRUSTRUM
-HRESULT CGameInstance::Frustrum_Init()
+void CGameInstance::Ready_Frustrum()
 {
-	return m_pFrustrum->Initialize();
+	m_pFrustrum->Initialize();
 }
-_bool CGameInstance::Culling_AABB(CCollider* pCollider)
+_float CGameInstance::Get_FrustrumMidStart() const
 {
-	return m_pFrustrum->Culling(pCollider);
+	return m_pFrustrum->Get_MidStart();
+}
+_float CGameInstance::Get_FrustrumFarStart() const
+{
+	return m_pFrustrum->Get_FarStart();
+}
+void CGameInstance::Resize_SplitFrustrum(const _float fMidStart, const _float fFarStart)
+{
+	m_pFrustrum->Resize_SplitFrustrum(fMidStart, fFarStart);
+}
+EFrustrumTier CGameInstance::Classify_BySplitFrustrum(const BoundingBox& AABB)
+{
+	return m_pFrustrum->Classify_BySplitFrustrum(AABB);
+}
+EFrustrumTier CGameInstance::Classify_BySplitFrustrum(const BoundingSphere& Sphere)
+{
+	return m_pFrustrum->Classify_BySplitFrustrum(Sphere);
+}
+BoundingFrustum* CGameInstance::Get_BoundingFrustrum_Local()
+{
+	return m_pFrustrum->Get_BoundingFrustrum_Local();
+}
+BoundingFrustum* CGameInstance::Get_BoundingFrustrum_World()
+{
+	return m_pFrustrum->Get_BoundingFrustrum_World();
 }
 #pragma endregion
 
@@ -783,9 +844,9 @@ HRESULT CGameInstance::Add_MRT(EMRTLayer eMRTLayer, ERenderTarget eTarget)
 	return m_pRenderTarget_Manager->Add_MRT(eMRTLayer, eTarget);
 }
 
-HRESULT CGameInstance::Begin_MRT(EMRTLayer eMRTLayer)
+HRESULT CGameInstance::Begin_MRT(EMRTLayer eMRTLayer, _bool bClear)
 {
-	return m_pRenderTarget_Manager->Begin_MRT(eMRTLayer);
+	return m_pRenderTarget_Manager->Begin_MRT(eMRTLayer, bClear);
 }
 
 HRESULT CGameInstance::End_MRT()
@@ -798,9 +859,9 @@ HRESULT CGameInstance::Bind_RT_ShaderResource(ERenderTarget eTarget, CShader* pS
 	return m_pRenderTarget_Manager->Bind_ShaderResource(eTarget, pShader);
 }
 
-HRESULT CGameInstance::Copy_BackBufferResource(ERenderTarget eTarget)
+HRESULT CGameInstance::Copy_SceneHDRResource(ERenderTarget eTarget)
 {
-	return m_pRenderTarget_Manager->Copy_BackBufferResource(eTarget);
+	return m_pRenderTarget_Manager->Copy_SceneHDRResource(eTarget);
 }
 
 #ifdef _DEBUG
@@ -842,6 +903,16 @@ Matrix CGameInstance::PxTransformToXMMatrix(PxTransform pxTransform)
 	return m_pPhysics_Module->PxTransformToXMMatrix(pxTransform);
 }
 
+_bool CGameInstance::Execute_Overlap(PxGeometry& shape, PxTransform& transform, OUT PxOverlapBuffer& hit, PxQueryFilterData& filterData, PxQueryFilterCallback* filterCallback)
+{
+	return m_pPhysics_Module->Execute_Overlap(shape, transform, hit, filterData, filterCallback);
+}
+
+CPhysics_QueryFilterCallback* CGameInstance::GetQueryFilterCallback()
+{
+	return m_pPhysics_Module->GetQueryFilterCallback();
+}
+
 void CGameInstance::SerializeStaticMesh(std::filesystem::path path, vector<PxTriangleMesh*> meshes)
 {
 	m_pPhysics_Module->SerializeStaticMesh(path, meshes);
@@ -872,7 +943,12 @@ vector<PxShape*> CGameInstance::GetMeshShape(PHYSICSCOLLIDER_DESC* pDesc)
 	return m_pPhysics_Module->GetMeshShape(pDesc);
 }
 
-PxRigidActor* CGameInstance::GetActor(PHYSICSRIGIDBODY_DESC* rigidBodyDesc, PHYSICSCOLLIDER_DESC* colliderDesc, vector<PxShape*>& shapes)
+vector<PxShape*> CGameInstance::CopyShapes(vector<PxShape*>& shapes)
+{
+	return m_pPhysics_Module->CopyShapes(shapes);
+}
+
+vector<PxRigidActor*> CGameInstance::GetActor(PHYSICSRIGIDBODY_DESC* rigidBodyDesc, PHYSICSCOLLIDER_DESC* colliderDesc, vector<PxShape*>& shapes)
 {
 	return m_pPhysics_Module->GetActor(rigidBodyDesc, colliderDesc, shapes);
 }
@@ -887,10 +963,24 @@ void CGameInstance::RegisterPhysicsMesh(_uint levelIndex, _wstring prototypeTag)
 	m_pPhysics_Module->RegisterPhysicsMesh(levelIndex, prototypeTag);
 }
 
+PxQuat CGameInstance::GetPureRotation(const Matrix& mat)
+{
+	return m_pPhysics_Module->GetPureRotation(mat);
+}
+
+PxVec3 CGameInstance::GetPureScale(const Matrix& mat)
+{
+	return m_pPhysics_Module->GetPureScale(mat);
+}
+
 #ifdef _DEBUG
 void CGameInstance::Physics_Render(PxRigidActor* pActor, XMVECTOR color)
 {
 	m_pPhysics_Module->Render(pActor, color);
+}
+void CGameInstance::Physics_Render(const PxGeometry& geom, const PxTransform& transform, XMVECTOR color)
+{
+	m_pPhysics_Module->Render(geom, transform, color);
 }
 #endif
 #pragma endregion
@@ -914,18 +1004,20 @@ void CGameInstance::Free()
 	Safe_Release(m_pRender_Manager);
 	Safe_Release(m_pRenderTarget_Manager);
 	Safe_Release(m_pCamera_Manager);
+	Safe_Release(m_pOctree_Manager);
 	Safe_Release(m_pObject_Manager);
 	Safe_Release(m_pObjectPool_Manager);
 	Safe_Release(m_pCollision_Manager);
 	Safe_Release(m_pPicking);
 	Safe_Release(m_pGameData_Manager);
 	Safe_Release(m_pPrototype_Manager);
-	Safe_Release(m_pPhysics_Module);
-	Safe_Release(m_pUIAction_Registry);
 	Safe_Release(m_pLevel_Manager);
 	Safe_Release(m_pEvent_Manager);
 	Safe_Release(m_pEventBus_Manager);
+	Safe_Release(m_pShaderAsset_Manager);
 	Safe_Release(m_pResource_Manager);
+	Safe_Release(m_pUIAction_Registry);
+	Safe_Release(m_pPhysics_Module);
 	Safe_Release(m_pGraphic_Device);
 	Super::Free();
 }

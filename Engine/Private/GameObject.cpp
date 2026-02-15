@@ -32,6 +32,7 @@ CGameObject::CGameObject(const CGameObject& rhs)
     Safe_AddRef(m_pDevice);
     Safe_AddRef(m_pDeviceContext);
     Safe_AddRef(m_pGameInstance);
+    m_tObjectInfoDesc.iObjectID = m_iObjectID;
     m_Components.fill(nullptr);
 }
 
@@ -238,6 +239,14 @@ Vec3 CGameObject::Get_CenterFromCollider(EColliderType eType, CBounding* pBoundi
     }
 }
 
+void CGameObject::Set_Flag(_uint iFlag, _bool bActive)
+{
+    if (bActive)
+        Engine_Utils::Add_Flag(m_tObjectInfoDesc.Flags8, iFlag);
+    else
+        Engine_Utils::RemoveHard_Flag(m_tObjectInfoDesc.Flags8, iFlag);
+}
+
 void CGameObject::Set_Name(const string& strName)
 {
     m_strName = strName;
@@ -246,6 +255,16 @@ void CGameObject::Set_Name(const string& strName)
 void CGameObject::Set_Name(const wstring& wstrName)
 {
     m_strName = Engine_Utils::ToString(wstrName);
+}
+
+string CGameObject::Get_Name()
+{
+    return m_strName;
+}
+
+wstring CGameObject::Get_WName()
+{
+    return Engine_Utils::ToWString(m_strName);
 }
 
 /// <summary>

@@ -7,9 +7,12 @@ NS_BEGIN(DTO)
 enum class EUIType : _uint
 {
 	CANVAS,
-	LAYER,
 	GENERICUI,
-	EVENT,
+	UI_TEXT,
+	TRIGGER,
+	BUTTON_TRIGGER,
+	DYNAMIC_IMAGE,
+	WORLD_UI,
 	END
 };
 inline constexpr _uint g_UITypeCount{ ENUM_TO_UINT(EUIType::END) };
@@ -17,217 +20,491 @@ inline constexpr _uint g_UITypeCount{ ENUM_TO_UINT(EUIType::END) };
 NLOHMANN_JSON_SERIALIZE_ENUM(EUIType,
 	{
 		{EUIType::CANVAS, "CANVAS"},
-		{EUIType::LAYER, "LAYER"},
 		{EUIType::GENERICUI, "GENERICUI"},
-		{EUIType::EVENT, "EVENT"}
+		{EUIType::UI_TEXT, "UI_TEXT"},
+		{EUIType::TRIGGER, "TRIGGER"},
+		{EUIType::BUTTON_TRIGGER, "BUTTON_TRIGGER"},
+		{EUIType::DYNAMIC_IMAGE, "DYNAMIC_IMAGE"},
+		{EUIType::WORLD_UI, "WORLD_UI"},
 	}
 )
 
-enum class EUIEvent : uint32_t
+enum class EUIClassType
 {
-	NONE = 0,
-	HOVER_ENTER,
-	HOVERING,
-	HOVER_EXIT,
-	PRESS_ENTER,
-	PRESSING,
-	PRESS_EXIT,
+	PROGRESS_BAR,
+	JUST_IMAGE,
+	UI_TEXT,
+	TRIGGER,
+	BUTTON_TRIGGER,
+	DYNAMIC_IMAGE,
+	WORLD_UI,
 	END
 };
 
-enum EUIEvent_Flag : uint32_t
+inline std::string UIClassTypeToString(EUIClassType eType)
 {
-	NONE = 0u,
-	HOVER_ENTER = 1u << 1,
-	HOVERING	= 1u << 2,
-	HOVER_EXIT	= 1u << 3,
-	PRESS_ENTER = 1u << 4,
-	PRESSING	= 1u << 5,
-	PRESS_EXIT	= 1u << 6,
-	END			= 1u << 7
-};
-
-inline DTO::EUIEvent EventFlagToEvent(DTO::EUIEvent_Flag eFlag)
-{
-	switch (eFlag)
+	switch (eType)
 	{
-	case DTO::EUIEvent_Flag::NONE:			return DTO::EUIEvent::NONE;
-	case DTO::EUIEvent_Flag::HOVER_ENTER:	return DTO::EUIEvent::HOVER_ENTER;
-	case DTO::EUIEvent_Flag::HOVERING:		return DTO::EUIEvent::HOVERING;
-	case DTO::EUIEvent_Flag::HOVER_EXIT:	return DTO::EUIEvent::HOVER_EXIT;
-	case DTO::EUIEvent_Flag::PRESS_ENTER:	return DTO::EUIEvent::PRESS_ENTER;
-	case DTO::EUIEvent_Flag::PRESSING:		return DTO::EUIEvent::PRESSING;
-	case DTO::EUIEvent_Flag::PRESS_EXIT:	return DTO::EUIEvent::PRESS_EXIT;
-	default:								return DTO::EUIEvent::NONE;
+	case EUIClassType::PROGRESS_BAR: return "PROGRESS_BAR";
+	case EUIClassType::JUST_IMAGE: return "JUST_IMAGE";
+	case EUIClassType::UI_TEXT: return "UI_TEXT";
+	case EUIClassType::TRIGGER: return "TRIGGER";
+	case EUIClassType::BUTTON_TRIGGER: return "BUTTON_TRIGGER";
+	case EUIClassType::DYNAMIC_IMAGE: return "DYNAMIC_IMAGE";
+	case EUIClassType::WORLD_UI: return "WORLD_UI";
+	case EUIClassType::END: return "END";
+	default: return "";
 	}
 }
 
-inline DTO::EUIEvent_Flag EventToEventFlag(DTO::EUIEvent eEvent)
+inline EUIClassType StringToUIClassType(const std::string& str)
 {
-	switch (eEvent)
-	{
-	case DTO::EUIEvent::NONE:			return DTO::EUIEvent_Flag::NONE;
-	case DTO::EUIEvent::HOVER_ENTER:	return DTO::EUIEvent_Flag::HOVER_ENTER;
-	case DTO::EUIEvent::HOVERING:		return DTO::EUIEvent_Flag::HOVERING;
-	case DTO::EUIEvent::HOVER_EXIT:		return DTO::EUIEvent_Flag::HOVER_EXIT;
-	case DTO::EUIEvent::PRESS_ENTER:	return DTO::EUIEvent_Flag::PRESS_ENTER;
-	case DTO::EUIEvent::PRESSING:		return DTO::EUIEvent_Flag::PRESSING;
-	case DTO::EUIEvent::PRESS_EXIT:		return DTO::EUIEvent_Flag::PRESS_EXIT;
-	default:							return DTO::EUIEvent_Flag::NONE;
-	}
+	if (str == "PROGRESS_BAR") return EUIClassType::PROGRESS_BAR;
+	else if (str == "JUST_IMAGE") return EUIClassType::JUST_IMAGE;
+	else if (str == "UI_TEXT") return EUIClassType::UI_TEXT;
+	else if (str == "TRIGGER") return EUIClassType::TRIGGER;
+	else if (str == "BUTTON_TRIGGER") return EUIClassType::BUTTON_TRIGGER;
+	else if (str == "DYNAMIC_IMAGE") return EUIClassType::DYNAMIC_IMAGE;
+	else if (str == "WORLD_UI") return EUIClassType::WORLD_UI;
+	else return EUIClassType::END;
 }
 
-
-NLOHMANN_JSON_SERIALIZE_ENUM(EUIEvent,
+NLOHMANN_JSON_SERIALIZE_ENUM(EUIClassType,
 	{
-		{EUIEvent::NONE, "NONE"},
-		{EUIEvent::HOVER_ENTER, "HOVER_ENTER"},
-		{EUIEvent::HOVERING, "HOVERING"},
-		{EUIEvent::HOVER_EXIT, "HOVER_EXIT"},
-		{EUIEvent::PRESS_ENTER, "PRESS_ENTER"},
-		{EUIEvent::PRESSING, "PRESSING"},
-		{EUIEvent::PRESS_EXIT, "PRESS_EXIT"},
+		{EUIClassType::PROGRESS_BAR, "PROGRESS_BAR"},
+		{EUIClassType::JUST_IMAGE, "JUST_IMAGE"},
+		{EUIClassType::UI_TEXT, "UI_TEXT"},
+		{EUIClassType::TRIGGER, "TRIGGER"},
+		{EUIClassType::BUTTON_TRIGGER, "BUTTON_TRIGGER"},
+		{EUIClassType::DYNAMIC_IMAGE, "DYNAMIC_IMAGE"},
+		{EUIClassType::WORLD_UI, "WORLD_UI"},
 	})
-	inline std::string UIEventToString(DTO::EUIEvent eType)
+
+enum EComponentTypeFlag
+{
+	BUTTON_COMPONENT = 1 << 0,
+	PROGRESS_COMPONENT = 1 << 1
+};
+
+enum class EUISubClassType
+{
+	NONE_OWNER,
+	PLAYER_HP,
+	PLAYER_ARMOR,
+	PLAYER_ENERGY,
+	PLAYER_LV,
+	END
+};
+
+inline std::string UISubClasstypeToString(EUISubClassType eType)
 {
 	switch (eType)
 	{
-	case DTO::EUIEvent::NONE: return "NONE";
-	case DTO::EUIEvent::HOVER_ENTER: return "HOVER_ENTER";
-	case DTO::EUIEvent::HOVERING: return "HOVERING";
-	case DTO::EUIEvent::HOVER_EXIT: return "HOVER_EXIT";
-	case DTO::EUIEvent::PRESS_ENTER: return "PRESS_ENTER";
-	case DTO::EUIEvent::PRESSING: return "PRESSING";
-	case DTO::EUIEvent::PRESS_EXIT: return "PRESS_EXIT";
+	case EUISubClassType::NONE_OWNER:		return "NONE_OWNER";
+	case EUISubClassType::PLAYER_HP:		return "PLAYER_HP";
+	case EUISubClassType::PLAYER_ARMOR:		return "PLAYER_ARMOR";
+	case EUISubClassType::PLAYER_ENERGY:	return "PLAYER_ENERGY";
+	case EUISubClassType::PLAYER_LV:		return "PLAYER_LV";
+	case EUISubClassType::END:				return "END";
 	default: return "";
 	}
 }
 
-inline DTO::EUIEvent StringToUIEvent(const std::string& str)
+inline EUISubClassType StringToUISubClassType(const std::string& str)
 {
-	if (str == "NONE") return DTO::EUIEvent::NONE;
-	else if (str == "HOVER_ENTER") return DTO::EUIEvent::HOVER_ENTER;
-	else if (str == "HOVERING") return DTO::EUIEvent::HOVERING;
-	else if (str == "HOVER_EXIT") return DTO::EUIEvent::HOVER_EXIT;
-	else if (str == "PRESS_ENTER") return DTO::EUIEvent::PRESS_ENTER;
-	else if (str == "PRESSING") return DTO::EUIEvent::PRESSING;
-	else if (str == "PRESS_EXIT") return DTO::EUIEvent::PRESS_EXIT;
-	else return DTO::EUIEvent::END;
+	if (str == "NONE_OWNER")			return EUISubClassType::NONE_OWNER;
+	else if (str == "PLAYER_HP")		return EUISubClassType::PLAYER_HP;
+	else if (str == "PLAYER_ARMOR")		return EUISubClassType::PLAYER_ARMOR;
+	else if (str == "PLAYER_ENERGY")	return EUISubClassType::PLAYER_ENERGY;
+	else if (str == "PLAYER_LV")		return EUISubClassType::PLAYER_LV;
+	else return EUISubClassType::END;
 }
 
-enum class EUIAction
+NLOHMANN_JSON_SERIALIZE_ENUM(EUISubClassType,
+	{
+		{EUISubClassType::NONE_OWNER,		"NONE_OWNER"},
+		{EUISubClassType::PLAYER_HP,		"PLAYER_HP"},
+		{EUISubClassType::PLAYER_ARMOR,		"PLAYER_ARMOR"},
+		{EUISubClassType::PLAYER_ENERGY,	"PLAYER_ENERGY"},
+		{EUISubClassType::PLAYER_LV,		"PLAYER_LV"},
+	})
+
+	enum class EUIDImageSubClassType
 {
-	/* (isVisible / bool) */
-	SET_VISIBLE,
-	/* (index / uint) */
-	SET_TEXTURE_INDEX,
+	NONE_OWNER,
+
+	// 플레이어 스킬 // PLAYER_E < New Enum < PLAYER_SKILL_END
+	PLAYER_SKILL_BEGIN,
+	PLAYER_E,
+	PLAYER_Q,
+	PLAYER_Z,
+	PLAYER_GUN,
+	PLAYER_DODGE,
+	PLAYER_SKILL_END,
+
+	// 호버됐을 때 팝업창 // HOVER_POPUP_BG < New Enum < HOVER_POPUP_END
+	HOVER_POPUP_BEGIN,
+	HOVER_POPUP_BG,
+	HOVER_POPUP_ICON,
+	HOVER_POPUP_TEXT,
+	HOVER_POPUP_END,
+
+	// 미니맵
+	MINIMAP_BEGIN,
+	MINIMAP_PLAYER_ICON,
+	MINIMAP_CAMERA_SIGHT,
+	MINIMAP_BGFRAME,
+	MINIMAP_WARNING_FRAME,
+	MINIMAP_END,
+
 	END
 };
 
-inline EUIAction StringToUIFunctype(const _string& str)
+NLOHMANN_JSON_SERIALIZE_ENUM(EUIDImageSubClassType,
+	{
+		{ EUIDImageSubClassType::NONE_OWNER,			"NONE_OWNER" },
+
+		{ EUIDImageSubClassType::PLAYER_SKILL_BEGIN,	"PLAYER_SKILL_BEGIN" },
+		{ EUIDImageSubClassType::PLAYER_E,				"PLAYER_E" },
+		{ EUIDImageSubClassType::PLAYER_Q,				"PLAYER_Q" },
+		{ EUIDImageSubClassType::PLAYER_Z,				"PLAYER_Z" },
+		{ EUIDImageSubClassType::PLAYER_GUN,			"PLAYER_GUN" },
+		{ EUIDImageSubClassType::PLAYER_DODGE,			"PLAYER_DODGE" },
+		{ EUIDImageSubClassType::PLAYER_SKILL_END,		"PLAYER_SKILL_END" },
+
+		{ EUIDImageSubClassType::HOVER_POPUP_BEGIN,		"HOVER_POPUP_BEGIN" },
+		{ EUIDImageSubClassType::HOVER_POPUP_BG,		"HOVER_POPUP_BG" },
+		{ EUIDImageSubClassType::HOVER_POPUP_ICON,		"HOVER_POPUP_ICON" },
+		{ EUIDImageSubClassType::HOVER_POPUP_TEXT,		"HOVER_POPUP_TEXT" },
+		{ EUIDImageSubClassType::HOVER_POPUP_END,		"HOVER_POPUP_END" },
+
+		{ EUIDImageSubClassType::MINIMAP_BEGIN,			"MINIMAP_BEGIN" },
+		{ EUIDImageSubClassType::MINIMAP_PLAYER_ICON,	"MINIMAP_PLAYER_ICON" },
+		{ EUIDImageSubClassType::MINIMAP_CAMERA_SIGHT,	"MINIMAP_CAMERA_SIGHT" },
+		{ EUIDImageSubClassType::MINIMAP_BGFRAME,		"MINIMAP_BGFRAME" },
+		{ EUIDImageSubClassType::MINIMAP_WARNING_FRAME,	"MINIMAP_WARNING_FRAME" },
+		{ EUIDImageSubClassType::MINIMAP_END,			"MINIMAP_END" },
+
+		{ EUIDImageSubClassType::END,					"END" }
+	})
+
+	inline EUIDImageSubClassType StringToUIDImageSubType(const std::string& str)
 {
-	if (str == "SET_VISIBLE")return EUIAction::SET_VISIBLE;
-	else if (str == "SET_TEXTURE_INDEX")return EUIAction::SET_TEXTURE_INDEX;
-	else return EUIAction::END;
+	if (str == "NONE_OWNER")			return EUIDImageSubClassType::NONE_OWNER;
+
+	if (str == "PLAYER_SKILL_BEGIN")	return EUIDImageSubClassType::PLAYER_SKILL_BEGIN;
+	if (str == "PLAYER_E")				return EUIDImageSubClassType::PLAYER_E;
+	if (str == "PLAYER_Q")				return EUIDImageSubClassType::PLAYER_Q;
+	if (str == "PLAYER_Z")				return EUIDImageSubClassType::PLAYER_Z;
+	if (str == "PLAYER_GUN")			return EUIDImageSubClassType::PLAYER_GUN;
+	if (str == "PLAYER_DODGE")			return EUIDImageSubClassType::PLAYER_DODGE;
+	if (str == "PLAYER_SKILL_END")		return EUIDImageSubClassType::PLAYER_SKILL_END;
+
+	if (str == "HOVER_POPUP_BEGIN")		return EUIDImageSubClassType::HOVER_POPUP_BEGIN;
+	if (str == "HOVER_POPUP_BG")		return EUIDImageSubClassType::HOVER_POPUP_BG;
+	if (str == "HOVER_POPUP_ICON")		return EUIDImageSubClassType::HOVER_POPUP_ICON;
+	if (str == "HOVER_POPUP_TEXT")		return EUIDImageSubClassType::HOVER_POPUP_TEXT;
+	if (str == "HOVER_POPUP_END")		return EUIDImageSubClassType::HOVER_POPUP_END;
+
+	if (str == "MINIMAP_BEGIN")			return EUIDImageSubClassType::MINIMAP_BEGIN;
+	if (str == "MINIMAP_PLAYER_ICON")	return EUIDImageSubClassType::MINIMAP_PLAYER_ICON;
+	if (str == "MINIMAP_CAMERA_SIGHT")	return EUIDImageSubClassType::MINIMAP_CAMERA_SIGHT;
+	if (str == "MINIMAP_BGFRAME")		return EUIDImageSubClassType::MINIMAP_BGFRAME;
+	if (str == "MINIMAP_WARNING_FRAME")	return EUIDImageSubClassType::MINIMAP_WARNING_FRAME;
+	if (str == "MINIMAP_END")			return EUIDImageSubClassType::MINIMAP_END;
+
+	if (str == "END")					return EUIDImageSubClassType::END;
+	return EUIDImageSubClassType::NONE_OWNER;
 }
 
-inline _string UIFunctypeToString(EUIAction eType)
+inline const char* UIDImageSubTypeToString(EUIDImageSubClassType type)
 {
-	switch (eType)
+	switch (type)
 	{
-	case DTO::EUIAction::SET_VISIBLE: return "SET_VISIBLE";
-	case DTO::EUIAction::SET_TEXTURE_INDEX: return "SET_TEXTURE_INDEX";
-	default: return "";
+	case EUIDImageSubClassType::NONE_OWNER:			return "NONE_OWNER";
+
+	case EUIDImageSubClassType::PLAYER_SKILL_BEGIN:	return "PLAYER_SKILL_BEGIN";
+	case EUIDImageSubClassType::PLAYER_E:			return "PLAYER_E";
+	case EUIDImageSubClassType::PLAYER_Q:			return "PLAYER_Q";
+	case EUIDImageSubClassType::PLAYER_Z:			return "PLAYER_Z";
+	case EUIDImageSubClassType::PLAYER_GUN:			return "PLAYER_GUN";
+	case EUIDImageSubClassType::PLAYER_DODGE:		return "PLAYER_DODGE";
+	case EUIDImageSubClassType::PLAYER_SKILL_END:	return "PLAYER_SKILL_END";
+
+	case EUIDImageSubClassType::HOVER_POPUP_BEGIN:	return "HOVER_POPUP_BEGIN";
+	case EUIDImageSubClassType::HOVER_POPUP_BG:		return "HOVER_POPUP_BG";
+	case EUIDImageSubClassType::HOVER_POPUP_ICON:	return "HOVER_POPUP_ICON";
+	case EUIDImageSubClassType::HOVER_POPUP_TEXT:	return "HOVER_POPUP_TEXT";
+	case EUIDImageSubClassType::HOVER_POPUP_END:	return "HOVER_POPUP_END";
+
+	case EUIDImageSubClassType::MINIMAP_BEGIN:			return "MINIMAP_BEGIN";
+	case EUIDImageSubClassType::MINIMAP_PLAYER_ICON:	return "MINIMAP_PLAYER_ICON";
+	case EUIDImageSubClassType::MINIMAP_CAMERA_SIGHT:	return "MINIMAP_CAMERA_SIGHT";
+	case EUIDImageSubClassType::MINIMAP_BGFRAME:		return "MINIMAP_BGFRAME";
+	case EUIDImageSubClassType::MINIMAP_WARNING_FRAME:	return "MINIMAP_WARNING_FRAME";
+	case EUIDImageSubClassType::MINIMAP_END:			return "MINIMAP_END";
+
+	case EUIDImageSubClassType::END:				return "END";
+	default:										return "NONE_OWNER";
+	}
+}
+
+enum class EUIWorldUISubClassType
+{
+	WORLD_UI_NONE,
+	MONSTER_HP,
+	WORLD_DAMAGE_FONT,
+	END
+};
+
+NLOHMANN_JSON_SERIALIZE_ENUM(EUIWorldUISubClassType,
+	{
+		{ EUIWorldUISubClassType::WORLD_UI_NONE,	"WORLD_UI_NONE" },
+		{ EUIWorldUISubClassType::MONSTER_HP,		"MONSTER_HP" },
+		{ EUIWorldUISubClassType::WORLD_DAMAGE_FONT,"WORLD_DAMAGE_FONT" },
+		{ EUIWorldUISubClassType::END,				"END" }
+	})
+
+	inline EUIWorldUISubClassType StringToUIWorldUISubType(const std::string& str)
+{
+	if (str == "WORLD_UI_NONE")       return EUIWorldUISubClassType::WORLD_UI_NONE;
+	if (str == "MONSTER_HP")          return EUIWorldUISubClassType::MONSTER_HP;
+	if (str == "WORLD_DAMAGE_FONT")   return EUIWorldUISubClassType::WORLD_DAMAGE_FONT;
+	if (str == "END")                 return EUIWorldUISubClassType::END;
+	return EUIWorldUISubClassType::WORLD_UI_NONE;
+}
+
+inline const char* UIWorldUISubTypeToString(EUIWorldUISubClassType type)
+{
+	switch (type)
+	{
+	case EUIWorldUISubClassType::WORLD_UI_NONE:      return "WORLD_UI_NONE";
+	case EUIWorldUISubClassType::MONSTER_HP:         return "MONSTER_HP";
+	case EUIWorldUISubClassType::WORLD_DAMAGE_FONT:  return "WORLD_DAMAGE_FONT";
+	case EUIWorldUISubClassType::END:                return "END";
+	default:                                         return "WORLD_UI_NONE";
 	}
 }
 
 /////////////////-------------------  Data Struct  -------------------/////////////////
-
-struct TUI_EventBindData
+// 텍스트 데이터
+struct TUI_TextData
 {
-	static constexpr EUIType eType = EUIType::EVENT	;
-	std::string strTag;
-	std::string strOwnerTag;
-	EUIEvent eEvent = EUIEvent::NONE;
-	std::string strActionKey;
-	json Params;
+	static constexpr EUIType eType = EUIType::UI_TEXT;
+	std::string		strTag;
+	std::string		strOwnerName;
+	std::string		strFontTag;
+	std::string	    strText;
+	Vec4			vFontColor;	
+	_float			fRotate;
+	_float			fScale;
 };
 
+/////////////////
+// 트리거 데이터
+struct TUI_TriggerData
+{
+	static constexpr EUIType eType = EUIType::TRIGGER;
+	std::string		strTag;
+	std::string		strOwnerName;
+	
+	vector<std::string> vecHoverEnterTriggerCanvas;
+	vector<std::string> vecHoverEnterTriggerUI;
+	vector<std::string> vecHoverExitTriggerCanvas;
+	vector<std::string> vecHoverExitTriggerUI;
+
+	vector<std::string> vecPressEnterTriggerCanvas;
+	vector<std::string> vecPressEnterTriggerUI;
+	vector<std::string> vecPressExitTriggerCanvas;
+	vector<std::string> vecPressExitTriggerUI;
+};
+
+/////////////////
+// 버튼 트리거 데이터
+struct TUI_ButtonTriggerData
+{
+	static constexpr EUIType eType = EUIType::BUTTON_TRIGGER;
+	std::string			strTag;
+	std::string			strOwnerName;
+	_string				strKeyMapping;
+	vector<std::string> vecTriggerCanvas;
+	vector<std::string> vecTriggerUI;
+};
+
+/////////////////
+// 다이나믹 이미지 데이터
+struct TUI_DImageData
+{
+	static constexpr EUIType eType = EUIType::DYNAMIC_IMAGE;
+	EUIClassType			eClassType;
+	std::string				strTag;
+	std::string				strOwnerName;
+	EUIDImageSubClassType	eDISubClassType;
+};
+
+/////////////////
+// 월드 UI 데이터
+struct TUI_WorldUIData
+{
+	static constexpr EUIType eType = EUIType::WORLD_UI;
+	EUIClassType			eClassType;
+	std::string				strTag;
+	std::string				strOwnerName;
+	EUIWorldUISubClassType	eWorldUISubClass;
+};
+
+/////////////////
+// UI
 struct TUI_GenericUIData
 {
 	static constexpr EUIType eType = EUIType::GENERICUI;
-	std::string strTag;
-	std::string strCanvasName;
-	std::string strLayerName;
-
-	uint32_t iRectTransformType;
-
-	_float fWidth;
-	_float fHeight;
-	_float fPosX;
-	_float fPosY;
-	_float fPosZ;
-	_string strTextureTag;
-	uint32_t iTextureIndex;
-};
-
-struct TUI_LayerData
-{
-	static constexpr EUIType eType = EUIType::LAYER;
-	std::string strTag;
-	std::string strCanvasName;
+	EUIClassType	eClassType;
+	std::string		strTag;
+	std::string		strCanvasName;
+	uint32_t		iRectTransformType;
+	_float			fWidth;
+	_float			fHeight;
+	_float			fPosX;
+	_float			fPosY;
+	_float			fPosZ;
+	_string			strTextureTag;
+	_bool			isVisible;
+	uint32_t		iComponentFlag;
+	EUISubClassType	eSubClassType;
+	_bool			isUseColorTint;
+	Vec4			vColorTint;
+	int32_t			iShaderPass;
+	int32_t			iFillDir;
+	_float			fDelay;
+	int32_t			iFlip;
+	_float			fAlphaRatio;
 };
 
 struct TUI_CanvasData
 {
 	static constexpr EUIType eType = EUIType::CANVAS;
 	std::string strTag;
-
-	uint32_t iLevelIndex;
-	_float fWidth;
-	_float fHeight;
-	_float fPosX;
-	_float fPosY;
-	_float fPosZ;
-
-	uint32_t iEditorSizeX ;
-	uint32_t iEditorSizeY;
+	uint32_t	iLevelIndex;
+	_float		fWidth;
+	_float		fHeight;
+	_float		fPosX;
+	_float		fPosY;
+	_float		fPosZ;
+	uint32_t	iEditorSizeX ;
+	uint32_t	iEditorSizeY;
 };
 
 /////////////////-------------------  to_json, from_json  -------------------/////////////////
-void to_json(json& j, const TUI_EventBindData& data);
-void from_json(const json& j, TUI_EventBindData& data);
+void to_json(json& j, const TUI_DImageData& data);
+void from_json(const json& j, TUI_DImageData& data);
+
+void to_json(json& j, const TUI_ButtonTriggerData& data);
+void from_json(const json& j, TUI_ButtonTriggerData& data);
+
+void to_json(json& j, const TUI_TriggerData& data);
+void from_json(const json& j, TUI_TriggerData& data);
+
+void to_json(json& j, const TUI_TextData& data);
+void from_json(const json& j, TUI_TextData& data);
+
 void to_json(json& j, const TUI_GenericUIData& data);
 void from_json(const json& j, TUI_GenericUIData& data);
-void to_json(json& j, const TUI_LayerData& data);
-void from_json(const json& j, TUI_LayerData& data);
+
 void to_json(json& j, const TUI_CanvasData& data);
 void from_json(const json& j, TUI_CanvasData& data);
 NS_END
-
 /////////////////-------------------  Wrapping Class  -------------------/////////////////
 
 NS_BEGIN(Engine)
-
-class ENGINE_DLL CUI_EventBindData_DTO final : public IObjectDataBase
+// 다이나믹 이미지 클래스 
+class ENGINE_DLL CUI_DImage_DTO final : public IObjectDataBase
 {
 	using Super = IObjectDataBase;
 private:
-	CUI_EventBindData_DTO() = default;
-	virtual ~CUI_EventBindData_DTO() = default;
+	CUI_DImage_DTO() = default;
+	virtual ~CUI_DImage_DTO() = default;
 public:
-	_uint Get_Type() const override { return ENUM_TO_UINT(DTO::EUIType::EVENT); }
+	_uint Get_Type() const override { return ENUM_TO_UINT(DTO::EUIType::DYNAMIC_IMAGE); }
 	const _string& Get_Tag() const override { return m_Data.strTag; }
 
 	json ToJson() const override;
 	HRESULT FromJson(const json& j) override;
 
-	const DTO::TUI_EventBindData& Get_Data() const { return m_Data; }
-	DTO::TUI_EventBindData& Get_Data() { return m_Data; }
+	const DTO::TUI_DImageData& Get_Data() const { return m_Data; }
+	DTO::TUI_DImageData& Get_Data() { return m_Data; }
 private:
-	DTO::TUI_EventBindData m_Data;
+	DTO::TUI_DImageData m_Data;
 public:
-	static CUI_EventBindData_DTO* Create() { return new CUI_EventBindData_DTO(); }
+	static CUI_DImage_DTO* Create() { return new CUI_DImage_DTO(); }
+	virtual void Free() override { Super::Free(); }
+};
+
+// 버튼 트리거 클래스 
+class ENGINE_DLL CUI_ButtonTrigger_DTO final : public IObjectDataBase
+{
+	using Super = IObjectDataBase;
+private:
+	CUI_ButtonTrigger_DTO() = default;
+	virtual ~CUI_ButtonTrigger_DTO() = default;
+public:
+	_uint Get_Type() const override { return ENUM_TO_UINT(DTO::EUIType::BUTTON_TRIGGER); }
+	const _string& Get_Tag() const override { return m_Data.strTag; }
+
+	json ToJson() const override;
+	HRESULT FromJson(const json& j) override;
+
+	const DTO::TUI_ButtonTriggerData& Get_Data() const { return m_Data; }
+	DTO::TUI_ButtonTriggerData& Get_Data() { return m_Data; }
+private:
+	DTO::TUI_ButtonTriggerData m_Data;
+public:
+	static CUI_ButtonTrigger_DTO* Create() { return new CUI_ButtonTrigger_DTO(); }
+	virtual void Free() override { Super::Free(); }
+};
+
+// 트리거 클래스
+class ENGINE_DLL CUI_Trigger_DTO final : public IObjectDataBase
+{
+	using Super = IObjectDataBase;
+private:
+	CUI_Trigger_DTO() = default;
+	virtual ~CUI_Trigger_DTO() = default;
+public:
+	_uint Get_Type() const override { return ENUM_TO_UINT(DTO::EUIType::TRIGGER); }
+	const _string& Get_Tag() const override { return m_Data.strTag; }
+
+	json ToJson() const override;
+	HRESULT FromJson(const json& j) override;
+
+	const DTO::TUI_TriggerData& Get_Data() const { return m_Data; }
+	DTO::TUI_TriggerData& Get_Data() { return m_Data; }
+private:
+	DTO::TUI_TriggerData m_Data;
+public:
+	static CUI_Trigger_DTO* Create() { return new CUI_Trigger_DTO(); }
+	virtual void Free() override { Super::Free(); }
+};
+
+// 텍스트 클래스
+class ENGINE_DLL CUI_Text_DTO final : public IObjectDataBase
+{
+	using Super = IObjectDataBase;
+private:
+	CUI_Text_DTO() = default;
+	virtual ~CUI_Text_DTO() = default;
+public:
+	_uint Get_Type() const override { return ENUM_TO_UINT(DTO::EUIType::UI_TEXT); }
+	const _string& Get_Tag() const override { return m_Data.strTag; }
+
+	json ToJson() const override;
+	HRESULT FromJson(const json& j) override;
+
+	const DTO::TUI_TextData& Get_Data() const { return m_Data; }
+	DTO::TUI_TextData& Get_Data() { return m_Data; }
+private:
+	DTO::TUI_TextData m_Data;
+public:
+	static CUI_Text_DTO* Create() { return new CUI_Text_DTO(); }
 	virtual void Free() override { Super::Free(); }
 };
 
@@ -250,28 +527,6 @@ private:
 	DTO::TUI_GenericUIData m_Data;
 public:
 	static CUI_GenericUI_DTO* Create() { return new CUI_GenericUI_DTO(); }
-	virtual void Free() override { Super::Free(); }
-};
-
-class ENGINE_DLL CUI_Layer_DTO final : public IObjectDataBase
-{
-	using Super = IObjectDataBase;
-private:
-	CUI_Layer_DTO() = default;
-	virtual ~CUI_Layer_DTO() = default;
-public:
-	_uint Get_Type() const override { return ENUM_TO_UINT(DTO::EUIType::LAYER); }
-	const std::string& Get_Tag() const override { return m_Data.strTag; }
-
-	json ToJson() const override;
-	HRESULT FromJson(const json& j) override;
-
-	const DTO::TUI_LayerData& Get_Data() const { return m_Data; }
-	DTO::TUI_LayerData& Get_Data() { return m_Data; }
-private:
-	DTO::TUI_LayerData m_Data;
-public:
-	static CUI_Layer_DTO* Create() { return new CUI_Layer_DTO(); }
 	virtual void Free() override { Super::Free(); }
 };
 

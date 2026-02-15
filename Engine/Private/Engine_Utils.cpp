@@ -1,5 +1,6 @@
 #include "Engine_pch.h"
 #include "Engine_Utils.h"
+#include <cctype>
 #include <fstream>
 #include <filesystem>
 
@@ -89,6 +90,25 @@ void Engine_Utils::Add_Text(OUT wstring& wstr_out, const wstring& wstrfind, cons
     }
 }
 
+wstring Engine_Utils::To_Lower(wstring s)
+{
+    for (auto& wch : s)
+        wch = static_cast<wchar_t>(::towlower(wch));
+    return s;
+}
+
+wstring Engine_Utils::Normalize_PathKey(const path& filePath)
+{
+    path src = filePath.lexically_normal();
+    wstring wstr = src.generic_wstring();
+    return To_Lower(src);
+}
+
+void Engine_Utils::Hash_HasCombine(size_t& seed, size_t value)
+{
+    seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+}
+
 string Engine_Utils::NormalizePath(const std::filesystem::path& path)
 {
     std::string s = path.lexically_normal().string();  // ../, ./ 정리 + 문자열 변환
@@ -111,7 +131,7 @@ wstring Engine_Utils::ToWString(string value)
         return wstring();
 
     _int iRequire = ::MultiByteToWideChar(
-        CP_ACP, MB_ERR_INVALID_CHARS,
+        CP_UTF8, MB_ERR_INVALID_CHARS,
         value.data(),
         static_cast<_int>(value.size()),
         nullptr, 0);
@@ -122,7 +142,7 @@ wstring Engine_Utils::ToWString(string value)
     wstring wstrReturn(static_cast<size_t>(iRequire), L'\0');
 
     _int iWritten = ::MultiByteToWideChar(
-        CP_ACP, MB_ERR_INVALID_CHARS,
+        CP_UTF8, MB_ERR_INVALID_CHARS,
         value.data(), static_cast<_int>(value.size()),
         wstrReturn.data(), iRequire);
 
@@ -249,11 +269,47 @@ void Engine_Utils::Set_OnlyFlag(Flags& curFlags, _uint iBitFlag)
     curFlags |= iBitFlag;
 }
 
+void Engine_Utils::Merge_MinMax(const Vec3* pMinMax, Vec3& ioMin, Vec3& ioMax)
+{
+    const Vec3& vMin = pMinMax[0];
+    const Vec3& vMax = pMinMax[1];
+
+    ioMin.x = (std::min)(ioMin.x, vMin.x);
+    ioMin.y = (std::min)(ioMin.y, vMin.y);
+    ioMin.z = (std::min)(ioMin.z, vMin.z);
+
+    ioMax.x = (std::max)(ioMax.x, vMax.x);
+    ioMax.y = (std::max)(ioMax.y, vMax.y);
+    ioMax.z = (std::max)(ioMax.z, vMax.z);
+}
+
+BoundingBox Engine_Utils::MakeAABB_FromMinMax(const Vec3& vMin, const Vec3& vMax)
+{
+    BoundingBox boundingBox;
+    XMFLOAT3 vPoints[2] = { vMin, vMax };
+    BoundingBox::CreateFromPoints(boundingBox, 2, vPoints, sizeof(XMFLOAT3));
+    return boundingBox;
+}
+
+BoundingSphere Engine_Utils::MakeSphere_FromMinMax(const Vec3& vMin, const Vec3& vMax)
+{
+    BoundingSphere boundingSphere;
+    XMFLOAT3 vPoints[2] = { vMin, vMax };
+    BoundingSphere::CreateFromPoints(boundingSphere, 2, vPoints, sizeof(XMFLOAT3));
+    return boundingSphere;
+}
+
 void Engine_Utils::read_vec3_xyz(const json& _j, Vec3& vOut)
 {
     vOut.x = _j.value("X", 0.f);
     vOut.y = _j.value("Y", 0.f);
     vOut.z = _j.value("Z", 0.f);
+}
+
+void Engine_Utils::read_vec2_xy(const json& _j, Vec2& vOut)
+{
+    vOut.x = _j.value("X", 0.f);
+    vOut.y = _j.value("Y", 0.f);
 }
 
 void Engine_Utils::read_vec3_PitchYawRoll(const json& _j, Vec3& vOut)
@@ -278,6 +334,12 @@ void Engine_Utils::write_vec3_xyz(json& _j, const Vec3& vOut)
     _j["Z"] = vOut.z;
 }
 
+void Engine_Utils::write_vec2_xy(json& _j, const Vec2& vOut)
+{
+    _j["X"] = vOut.x;
+    _j["Y"] = vOut.y;
+}
+
 void Engine_Utils::write_vec3_PitchYawRoll(json& _j, const Vec3& vOut)
 {
     _j["Pitch"] = vOut.x;
@@ -291,4 +353,54 @@ void Engine_Utils::write_vec4_Quat(json& _j,const  Quat& vOut)
     _j["Y"] = vOut.y;
     _j["Z"] = vOut.z;
     _j["W"] = vOut.w;
+}
+
+string Engine_Utils::MaterialTextureType_ToString(EMaterialTextureType eType)
+{
+    switch (eType)
+    {
+    case EMaterialTextureType::DIFFUSE:           return "DIFFUSE";
+    case EMaterialTextureType::SPECULAR:          return "SPECULAR";
+    case EMaterialTextureType::AMBIENT:           return "AMBIENT";
+    case EMaterialTextureType::EMISSIVE:          return "EMISSIVE";
+    case EMaterialTextureType::HEIGHT:            return "HEIGHT";
+    case EMaterialTextureType::NORMALS:           return "NORMALS";
+    case EMaterialTextureType::SHININESS:         return "SHININESS";
+    case EMaterialTextureType::OPACITY:           return "OPACITY";
+    case EMaterialTextureType::DISPLACEMENT:      return "DISPLACEMENT";
+    case EMaterialTextureType::LIGHTMAP:          return "LIGHTMAP";
+    case EMaterialTextureType::REFLECTION:        return "REFLECTION";
+    case EMaterialTextureType::BASE_COLOR:        return "BASE_COLOR";
+    case EMaterialTextureType::NORMAL_CAMERA:     return "NORMAL_CAMERA";
+    case EMaterialTextureType::EMISSION_COLOR:    return "EMISSION_COLOR";
+    case EMaterialTextureType::METALNESS:         return "METALNESS";
+    case EMaterialTextureType::DIFFUSE_ROUGHNESS: return "DIFFUSE_ROUGHNESS";
+    case EMaterialTextureType::AMBIENT_OCCLUSION: return "AMBIENT_OCCLUSION";
+    case EMaterialTextureType::UNKNOWN:           return "UNKNOWN";
+    default:                                      return "NONE";
+    }
+
+}
+
+EMaterialTextureType Engine_Utils::MaterialTextureType_ToEnum(string strType)
+{
+    if (strType == "DIFFUSE")           return EMaterialTextureType::DIFFUSE;
+    if (strType == "SPECULAR")          return EMaterialTextureType::SPECULAR;
+    if (strType == "AMBIENT")           return EMaterialTextureType::AMBIENT;
+    if (strType == "EMISSIVE")          return EMaterialTextureType::EMISSIVE;
+    if (strType == "HEIGHT")            return EMaterialTextureType::HEIGHT;
+    if (strType == "NORMALS")           return EMaterialTextureType::NORMALS;
+    if (strType == "SHININESS")         return EMaterialTextureType::SHININESS;
+    if (strType == "OPACITY")           return EMaterialTextureType::OPACITY;
+    if (strType == "DISPLACEMENT")      return EMaterialTextureType::DISPLACEMENT;
+    if (strType == "LIGHTMAP")          return EMaterialTextureType::LIGHTMAP;
+    if (strType == "REFLECTION")        return EMaterialTextureType::REFLECTION;
+    if (strType == "BASE_COLOR")        return EMaterialTextureType::BASE_COLOR;
+    if (strType == "NORMAL_CAMERA")     return EMaterialTextureType::NORMAL_CAMERA;
+    if (strType == "EMISSION_COLOR")    return EMaterialTextureType::EMISSION_COLOR;
+    if (strType == "METALNESS")         return EMaterialTextureType::METALNESS;
+    if (strType == "DIFFUSE_ROUGHNESS") return EMaterialTextureType::DIFFUSE_ROUGHNESS;
+    if (strType == "AMBIENT_OCCLUSION") return EMaterialTextureType::AMBIENT_OCCLUSION;
+
+    return EMaterialTextureType::MAX_COUNT;
 }

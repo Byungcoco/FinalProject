@@ -4,6 +4,7 @@
 #include "ImGui_Dockspace_TabBar.h"
 #include "ToolObject.h"
 #include "Level_Loading.h"
+#include "MapObject.h"
 
 IMPLEMENT_SINGLETON(CImGui_ToolManager)
 
@@ -94,8 +95,8 @@ void CImGui_ToolManager::ImGuizmo_Render(CToolObject* pSelectedObject)
 		const Matrix& matProj = m_pGameInstance->Get_ProjMatrix();
 
 		// Object Transform
-		CTransform* pTransform = pSelectedObject->Get_Component<CTransform>();
-		Matrix matWorld = pTransform->Get_WorldMatrix();
+
+		Matrix		matWorld   = pSelectedObject->Get_WorldMatrix();
 
 		// snapping
 		_bool bSnap = KEY_BUTTON_HOLD(DIK_LSHIFT);
@@ -125,17 +126,10 @@ void CImGui_ToolManager::ImGuizmo_Render(CToolObject* pSelectedObject)
 		ImGuizmo::Manipulate(*matView.m, *matProj.m, operation
 			, ImGuizmo::WORLD, *matWorld.m, nullptr, bSnap ? snapValues : nullptr);
 
+
 		if (ImGuizmo::IsUsing())
 		{
-			// float translation[3];
-			// float rotation[3];
-			// float scale[3];
-			// ImGuizmo::DecomposeMatrixToComponents(*matWorld.m, translation, rotation, scale);
-
-			pTransform->Set_Info(TRANSFORM_INFO_STATE::RIGHT, matWorld.Right());
-			pTransform->Set_Info(TRANSFORM_INFO_STATE::UP, matWorld.Up());
-			pTransform->Set_Info(TRANSFORM_INFO_STATE::LOOK, matWorld.Backward());
-			pTransform->Set_Info(TRANSFORM_INFO_STATE::POS, matWorld.Translation());
+			pSelectedObject->Set_WorldMatrix(matWorld);
 		}
 	}
 	else
@@ -354,6 +348,23 @@ void CImGui_ToolManager::Calc_ViewportMousePos()
 HRESULT CImGui_ToolManager::Ready_Events()
 {
 	return S_OK;
+}
+
+_bool CImGui_ToolManager::Get_MousePosInViewPort() const
+{
+	POINT			vScreenPos;
+	::GetCursorPos(&vScreenPos);
+
+	const uint32_t LT = 0;
+	const uint32_t RB = 1;
+
+	if (vScreenPos.x < m_vViewportBounds[LT].x) return false;
+	if (vScreenPos.y < m_vViewportBounds[LT].y) return false;
+
+	if (vScreenPos.x > m_vViewportBounds[RB].x) return false;
+	if (vScreenPos.y > m_vViewportBounds[RB].y) return false;
+
+	return true;
 }
 
 void CImGui_ToolManager::Render_End()

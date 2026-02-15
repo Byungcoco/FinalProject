@@ -8,35 +8,148 @@ using json = nlohmann::json;
 
 NS_BEGIN(DTO)
 
-void to_json(json& j, const TUI_EventBindData& data)
+void to_json(json& j, const TUI_DImageData& data)
 {
 	j = json
 	{
-		{ "Type", TUI_EventBindData::eType },
+		{ "Type", TUI_DImageData::eType },
 		{ "strTag", data.strTag },
-		{"strOwnerTag", data.strOwnerTag},
-		{"eEvent", data.eEvent},
-		{"strActionKey", data.strActionKey},
-		{"Params", data.Params}
+		{ "strOwnerName", data.strOwnerName },
+		{ "eDISubClassType", data.eDISubClassType },
 	};
 }
-void from_json(const json& j, TUI_EventBindData& data)
+
+void from_json(const json& j, TUI_DImageData& data)
 {
-	j.at("strTag").get_to(data.strTag);
-	j.at("strOwnerTag").get_to(data.strOwnerTag);
-	j.at("eEvent").get_to(data.eEvent);
-	j.at("strActionKey").get_to(data.strActionKey);
-	j.at("Params").get_to(data.Params);
+	data.strTag			 = "";
+	data.strOwnerName	 = "";
+	data.eDISubClassType = std::decay_t<decltype(data.eDISubClassType)>{};
+
+	data.strTag          = j.value("strTag", data.strTag);
+	data.strOwnerName    = j.value("strOwnerName", data.strOwnerName);
+	data.eDISubClassType = j.value("eDISubClassType", j.value("eSubClassType", data.eDISubClassType));
 }
+
+void to_json(json& j, const TUI_ButtonTriggerData& data)
+{
+	j = json
+	{
+		{"Type", TUI_ButtonTriggerData::eType},
+		{"strTag", data.strTag},
+		{"strOwnerName", data.strOwnerName},
+		{"strKeyMapping", data.strKeyMapping},
+		{"vecTriggerCanvas", data.vecTriggerCanvas},
+		{"vecTriggerUI", data.vecTriggerUI},
+	};
+}
+
+void from_json(const json& j, TUI_ButtonTriggerData& data)
+{
+	data.strTag			= "";
+	data.strOwnerName	= "";
+	data.strKeyMapping	= "";    
+	data.vecTriggerCanvas.clear();
+	data.vecTriggerUI.clear();
+
+	data.strTag           = j.value("strTag", data.strTag);
+	data.strOwnerName     = j.value("strOwnerName", data.strOwnerName);
+	data.strKeyMapping    = j.value("strKeyMapping", data.strKeyMapping);
+	data.vecTriggerCanvas = j.value("vecTriggerCanvas", data.vecTriggerCanvas);
+	data.vecTriggerUI     = j.value("vecTriggerUI", data.vecTriggerUI);
+}
+
+void to_json(json& j, const TUI_TriggerData& data)
+{
+	j = json
+	{
+		{"Type", TUI_TriggerData::eType},
+		{"strTag", data.strTag},
+		{"strOwnerName", data.strOwnerName},
+		{"vecHoverEnterTriggerCanvas",  data.vecHoverEnterTriggerCanvas},
+		{"vecHoverEnterTriggerUI",      data.vecHoverEnterTriggerUI},
+		{"vecHoverExitTriggerCanvas",	data.vecHoverExitTriggerCanvas},
+		{"vecHoverExitTriggerUI",		data.vecHoverExitTriggerUI},
+		{"vecPressEnterTriggerCanvas",	data.vecPressEnterTriggerCanvas},
+		{"vecPressEnterTriggerUI",		data.vecPressEnterTriggerUI},
+		{"vecPressExitTriggerCanvas",	data.vecPressExitTriggerCanvas},
+		{"vecPressExitTriggerUI",		data.vecPressExitTriggerUI},
+	};
+}
+
+void from_json(const json& j, TUI_TriggerData& data)
+{
+	data.strTag = "";
+	data.strOwnerName = "";
+	data.vecHoverEnterTriggerCanvas.clear();
+	data.vecHoverEnterTriggerUI.clear();
+	data.vecHoverExitTriggerCanvas.clear();
+	data.vecHoverExitTriggerUI.clear();
+	data.vecPressEnterTriggerCanvas.clear();
+	data.vecPressEnterTriggerUI.clear();
+	data.vecPressExitTriggerCanvas.clear();
+	data.vecPressExitTriggerUI.clear();
+
+	data.strTag						= j.value("strTag", data.strTag);
+	data.strOwnerName				= j.value("strOwnerName", data.strOwnerName);
+	data.vecHoverEnterTriggerCanvas = j.value("vecHoverEnterTriggerCanvas", data.vecHoverEnterTriggerCanvas);
+	data.vecHoverEnterTriggerUI		= j.value("vecHoverEnterTriggerUI", data.vecHoverEnterTriggerUI);
+	data.vecHoverExitTriggerCanvas	= j.value("vecHoverExitTriggerCanvas", data.vecHoverExitTriggerCanvas);
+	data.vecHoverExitTriggerUI		= j.value("vecHoverExitTriggerUI", data.vecHoverExitTriggerUI);
+	data.vecPressEnterTriggerCanvas = j.value("vecPressEnterTriggerCanvas", data.vecPressEnterTriggerCanvas);
+	data.vecPressEnterTriggerUI		= j.value("vecPressEnterTriggerUI", data.vecPressEnterTriggerUI);
+	data.vecPressExitTriggerCanvas	= j.value("vecPressExitTriggerCanvas", data.vecPressExitTriggerCanvas);
+	data.vecPressExitTriggerUI		= j.value("vecPressExitTriggerUI", data.vecPressExitTriggerUI);
+}
+
+void to_json(json& j, const TUI_TextData& data)
+{
+	j = json
+	{
+		{"Type", TUI_TextData::eType },
+		{"strTag", data.strTag},
+		{"strOwnerName", data.strOwnerName},
+		{"strFontTag", data.strFontTag},
+		{"strText", data.strText},
+		{"vFontColor", {{ "x", data.vFontColor.x },{ "y", data.vFontColor.y },{ "z", data.vFontColor.z },{ "w", data.vFontColor.w }}},
+		{"fRotate", data.fRotate},
+		{"fScale", data.fScale},
+	};
+}
+
+void from_json(const json& j, TUI_TextData& data)
+{
+	data.strTag			= "";
+	data.strOwnerName	= "";
+	data.strText		= "No Text";
+	data.strFontTag		= "SemiBold";
+	data.vFontColor.x	= 1.f;
+	data.vFontColor.y	= 1.f;
+	data.vFontColor.z	= 1.f;
+	data.vFontColor.w	= 1.f;
+	data.fRotate		= 0.f;
+	data.fScale			= 1.f;
+
+	data.strTag			= j.value("strTag", data.strTag);
+	data.strOwnerName	= j.value("strOwnerName", data.strOwnerName);
+	data.strText		= j.value("strText", data.strText);
+	data.strFontTag		= j.value("strFontTag", data.strFontTag);
+	const json jc		= j.value("vFontColor", json::object());
+	data.vFontColor.x	= jc.value("x", data.vFontColor.x);
+	data.vFontColor.y	= jc.value("y", data.vFontColor.y);
+	data.vFontColor.z	= jc.value("z", data.vFontColor.z);
+	data.vFontColor.w	= jc.value("w", data.vFontColor.w);
+	data.fRotate		= j.value("fRotate", data.fRotate);
+	data.fScale			= j.value("fScale", data.fScale);
+}
+
 void to_json(json& j, const TUI_GenericUIData& data)
 {
 	j = json
 	{
 		{ "Type", TUI_GenericUIData::eType },
+		{ "eClassType",data.eClassType},
 		{ "strTag", data.strTag },
 		{ "strCanvasName", data.strCanvasName },
-		{ "strLayerName", data.strLayerName},
-
 		{ "iRectTransformType", data.iRectTransformType },
 		{ "fWidth", data.fWidth },
 		{ "fHeight", data.fHeight },
@@ -44,37 +157,72 @@ void to_json(json& j, const TUI_GenericUIData& data)
 		{ "fPosY", data.fPosY },
 		{ "fPosZ", data.fPosZ },
 		{ "strTextureTag", data.strTextureTag },
-		{ "iTextureIndex", data.iTextureIndex },
+		{ "isVisible", data.isVisible },
+		{ "iComponentFlag", data.iComponentFlag },
+		{ "eSubClassType", data.eSubClassType },
+		{ "isUseColorTint", data.isUseColorTint },
+		{ "vColorTint", {{ "x", data.vColorTint.x },{ "y", data.vColorTint.y },{ "z", data.vColorTint.z },{ "w", data.vColorTint.w }}},
+		{ "iShaderPass", data.iShaderPass },
+		{ "iFillDir", data.iFillDir },
+		{ "fDelay", data.fDelay },
+		{ "iFlip", data.iFlip },
+		{ "fAlphaRatio", data.fAlphaRatio },
 	};
 }
+
 void from_json(const json& j, TUI_GenericUIData& data)
 {
-	j.at("strTag").get_to(data.strTag);
-	j.at("strCanvasName").get_to(data.strCanvasName);
-	j.at("strLayerName").get_to(data.strLayerName);
-	j.at("iRectTransformType").get_to(data.iRectTransformType);
-	j.at("fWidth").get_to(data.fWidth);
-	j.at("fHeight").get_to(data.fHeight);
-	j.at("fPosX").get_to(data.fPosX);
-	j.at("fPosY").get_to(data.fPosY);
-	j.at("fPosZ").get_to(data.fPosZ);
-	j.at("strTextureTag").get_to(data.strTextureTag);
-	j.at("iTextureIndex").get_to(data.iTextureIndex);
+	data.eClassType			= EUIClassType::JUST_IMAGE;
+	data.strTag				= "";
+	data.strCanvasName		= "";
+	data.iRectTransformType = 0;
+	data.fWidth				= 0.f;
+	data.fHeight			= 0.f;
+	data.fPosX				= 0.f;
+	data.fPosY				= 0.f;
+	data.fPosZ				= 0.f;
+	data.strTextureTag		= "";
+	data.isVisible			= true;
+	data.iComponentFlag		= 0;
+	data.eSubClassType		= decltype(data.eSubClassType){};
+	data.isUseColorTint		= false;
+	data.vColorTint.x		= 1.f;
+	data.vColorTint.y		= 1.f;
+	data.vColorTint.z		= 1.f;
+	data.vColorTint.w		= 1.f;
+	data.iShaderPass		= 0;
+	data.iFillDir			= 0;
+	data.fDelay				= 0.f;
+	data.iFlip				= 0;
+	data.fAlphaRatio		= 1.f;
+
+
+	data.eClassType			= j.value("eClassType", data.eClassType);
+	data.strTag				= j.value("strTag", data.strTag);
+	data.strCanvasName		= j.value("strCanvasName", data.strCanvasName);
+	data.iRectTransformType = j.value("iRectTransformType", data.iRectTransformType);
+	data.fWidth				= j.value("fWidth", data.fWidth);
+	data.fHeight			= j.value("fHeight", data.fHeight);
+	data.fPosX				= j.value("fPosX", data.fPosX);
+	data.fPosY				= j.value("fPosY", data.fPosY);
+	data.fPosZ				= j.value("fPosZ", data.fPosZ);
+	data.strTextureTag		= j.value("strTextureTag", data.strTextureTag);
+	data.isVisible			= j.value("isVisible", data.isVisible);
+	data.iComponentFlag		= j.value("iComponentFlag", data.iComponentFlag);
+	data.eSubClassType		= j.value("eSubClassType", data.eSubClassType);
+	data.isUseColorTint		= j.value("isUseColorTint", data.isUseColorTint);
+	const json jt			= j.value("vColorTint", json::object());
+	data.vColorTint.x		= jt.value("x", data.vColorTint.x);
+	data.vColorTint.y		= jt.value("y", data.vColorTint.y);
+	data.vColorTint.z		= jt.value("z", data.vColorTint.z);
+	data.vColorTint.w		= jt.value("w", data.vColorTint.w);
+	data.iShaderPass		= j.value("iShaderPass", data.iShaderPass);
+	data.iFillDir			= j.value("iFillDir", data.iFillDir);
+	data.fDelay				= j.value("fDelay", data.fDelay);
+	data.iFlip				= j.value("iFlip", data.iFlip);
+	data.fAlphaRatio		= j.value("fAlphaRatio", data.fAlphaRatio);
 }
-void to_json(json& j, const TUI_LayerData& data)
-{
-	j = json
-	{
-		{ "Type", TUI_LayerData::eType },
-		{ "strTag", data.strTag },
-		{ "strCanvasName", data.strCanvasName },
-	};
-}
-void from_json(const json& j, TUI_LayerData& data)
-{
-	j.at("strTag").get_to(data.strTag);
-	j.at("strCanvasName").get_to(data.strCanvasName);
-}
+
 void to_json(json& j, const TUI_CanvasData& data)
 {
 	j = json
@@ -91,23 +239,67 @@ void to_json(json& j, const TUI_CanvasData& data)
 		{ "iEditorSizeY", data.iEditorSizeY },
 	};
 }
+
 void from_json(const json& j, TUI_CanvasData& data)
 {
-	j.at("strTag").get_to(data.strTag);
-	j.at("iLevelIndex").get_to(data.iLevelIndex);
-	j.at("fWidth").get_to(data.fWidth);
-	j.at("fHeight").get_to(data.fHeight);
-	j.at("fPosX").get_to(data.fPosX);
-	j.at("fPosY").get_to(data.fPosY);
-	j.at("fPosZ").get_to(data.fPosZ);
-	j.at("iEditorSizeX").get_to(data.iEditorSizeX);
-	j.at("iEditorSizeY").get_to(data.iEditorSizeY);
+	data.strTag			= j.value("strTag", data.strTag);
+	data.iLevelIndex	= j.value("iLevelIndex", data.iLevelIndex);
+	data.fWidth			= j.value("fWidth", data.fWidth);
+	data.fHeight		= j.value("fHeight", data.fHeight);
+	data.fPosX			= j.value("fPosX", data.fPosX);
+	data.fPosY			= j.value("fPosY", data.fPosY);
+	data.fPosZ			= j.value("fPosZ", data.fPosZ);
+	data.iEditorSizeX	= j.value("iEditorSizeX", data.iEditorSizeX);
+	data.iEditorSizeY	= j.value("iEditorSizeY", data.iEditorSizeY);
 }
 
 NS_END
 
-
 NS_BEGIN(Engine)
+
+json CUI_DImage_DTO::ToJson() const
+{
+	return json(m_Data);
+}
+
+HRESULT CUI_DImage_DTO::FromJson(const json& j)
+{
+	m_Data = j.get<DTO::TUI_DImageData>();
+	return S_OK;
+}
+
+json CUI_ButtonTrigger_DTO::ToJson() const
+{
+	return json(m_Data);
+}
+
+HRESULT CUI_ButtonTrigger_DTO::FromJson(const json& j)
+{
+	m_Data = j.get<DTO::TUI_ButtonTriggerData>();
+	return S_OK;
+}
+
+json CUI_Trigger_DTO::ToJson() const
+{
+	return json(m_Data);
+}
+
+HRESULT CUI_Trigger_DTO::FromJson(const json& j)
+{
+	m_Data = j.get<DTO::TUI_TriggerData>();
+	return S_OK;
+}
+
+json CUI_Text_DTO::ToJson() const
+{
+	return json(m_Data);
+}
+
+HRESULT CUI_Text_DTO::FromJson(const json& j)
+{
+	m_Data = j.get<DTO::TUI_TextData>();
+	return S_OK;
+}
 
 json CUI_GenericUI_DTO::ToJson() const
 {
@@ -120,17 +312,6 @@ HRESULT CUI_GenericUI_DTO::FromJson(const json& j)
 	return S_OK;
 }
 
-json CUI_Layer_DTO::ToJson() const
-{
-	return json(m_Data);
-}
-
-HRESULT CUI_Layer_DTO::FromJson(const json& j)
-{
-	m_Data = j.get<DTO::TUI_LayerData>();
-	return S_OK;
-}
-
 json CUI_Canvas_DTO::ToJson() const
 {
 	return json(m_Data);
@@ -139,17 +320,6 @@ json CUI_Canvas_DTO::ToJson() const
 HRESULT CUI_Canvas_DTO::FromJson(const json& j)
 {
 	m_Data = j.get<DTO::TUI_CanvasData>();
-	return S_OK;
-}
-
-json CUI_EventBindData_DTO::ToJson() const
-{
-	return json(m_Data);
-}
-
-HRESULT CUI_EventBindData_DTO::FromJson(const json& j)
-{
-	m_Data = j.get<DTO::TUI_EventBindData>();
 	return S_OK;
 }
 

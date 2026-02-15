@@ -49,7 +49,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     MSG msg;
     msg.message = WM_NULL;
 
-    ::ShowCursor(FALSE);
+    ::ShowCursor(TRUE);
 
     CGameInstance* pGameInstance = CGameInstance::GetInstance();
     Safe_AddRef(pGameInstance);
@@ -57,8 +57,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     if (FAILED(pGameInstance->Add_Timer(L"Timer_Default")))
         return FALSE;
 
+    if (FAILED(pGameInstance->Add_Timer(L"Timer_Work")))
+        return E_FAIL;
+
     if (FAILED(pGameInstance->Add_Timer(L"Timer_60")))
         return FALSE;
+
+    pGameInstance->Set_MaxTimeDelta(L"Timer_Work", 10.f);
 
     _float fTimeAcc = { 0.0f };
     g_bStart = true;
@@ -75,7 +80,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         pGameInstance->Compute_TimeDelta(TEXT("Timer_Default"));
         fTimeAcc += pGameInstance->Get_TimeDelta(TEXT("Timer_Default"));
-
+        pGameInstance->Compute_TimeDelta(TEXT("Timer_Work"));
         if (fTimeAcc >= 1.f / 60.0f)
         {
             pGameInstance->Compute_TimeDelta(TEXT("Timer_60"));

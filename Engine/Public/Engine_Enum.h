@@ -13,13 +13,14 @@ namespace Engine
 	enum class LIGHT_TYPE : unsigned int { DIRECTIONAL, STATICPOINT, DYNAMICPOINT, END };
 	enum class EPOINT { A, B, C, END };
 	enum class ELINE { AB, BC, CA, END };
-	enum class RENDER_CATEGORY : unsigned int { PRIORITY, BLEND,NONEBLEND, NONELIGHT, BLENDUI, UI, END };
-	enum class DEFFERRED { DEBUG, DIRECTIONAL, POINT, COMBINED, END };
+	enum class RENDER_CATEGORY : unsigned int { PRIORITY, BLEND,NONEBLEND, NONELIGHT, ENVIRONMENT, DISTOTION, BLENDUI, UI, END };
+	enum class DEFFERRED { DEBUG, DIRECTIONAL, POINT, OUTLINE, SSAO_GEN, SSAO_BLURH, SSAO_BLURV, SSAO_UPSAMPLE, COMBINED, BLOOM_EXTRACT, BLOOM_BLURH, BLOOM_BLURV, TONEMAP, END };
 	enum class ECursorMode : unsigned int
 	{
-		LockedHiddenCenter,
+		LockedHiddenCenter = 0,
 		VisibleClipped,
 		VisibleFree,
+		Tool,
 		END
 	};
 
@@ -60,14 +61,125 @@ namespace Engine
 		COMPONENT,
 		END
 	};
+	//===================
+	// FX Scalar
+	//===================
+	enum class EFXScalar : unsigned int
+	{
+		MaterialMask = 0,
+		GlobalMask,
+		COUNT
+	};
+	constexpr const char* g_ScalarNames[static_cast<unsigned int>(EFXScalar::COUNT)] =
+	{
+		"g_iMaterialMask",
+		"g_iGlobalMask"
+	};
+	//===================
+	// FX CB
+	//===================
+	enum class EFXCB : unsigned int
+	{
+		Global = 0,
+		Inv,
+		Transform,
+		Light,
+		Material,
+		MaterialInst,
+		ObjectInfo,
+		Keyframe,
+		Bone,
+		Effect,
+		SSAOkernal,
+		SSAOparam,
+		HDRparam,
+		Bloomparam,
+		Outlineparam,
+		COUNT
+	};
+	constexpr const char* g_CBNames[static_cast<unsigned int>(EFXCB::COUNT)] =
+	{
+		"GlobalBuffer",
+		"InvBuffer",
+		"TransformBuffer",
+		"LightBuffer",
+		"MaterialBuffer",
+		"MaterialInstanceBuffer",
+		"ObjectInfoBuffer",
+		"KeyframeBuffer",
+		"BoneBuffer",
+		"ConstantBuffer_Effect",
+		"SSAOKernelBuffer",
+		"SSAOParamBuffer",
+		"HDRParamBuffer",
+		"BLOOMParamBuffer",
+		"OUTLINEParamBuffer"
+	};
+	//===================
+	// FX SRV
+	//===================
+	enum class EFXSRV : unsigned int
+	{
+		RT = 0,
+		RT_Diffuse,
+		RT_Normal,
+		RT_Shade,
+		RT_SpecularMask,
+		RT_Specular,
+		RT_Depth,
+		RT_ObjectInfo,
+		RT_AO,
+		RT_SceneHDR,
+		RT_SceneHDR_Copy,
+		RT_Bloom,
+		Transform,
+		Materials,
+		Textures,
+		Cube,
+		SSAONoise,
+		COUNT
+	};
+	constexpr const char* g_SRVNames[static_cast<unsigned int>(EFXSRV::COUNT)] =
+	{
+		"g_RenderTargetTexture",
+		"g_RenderTargetDiffuseTexture",
+		"g_RenderTargetNormalTexture",
+		"g_RenderTargetShadeTexture",
+		"g_RenderTargetSpecularMaskTexture",
+		"g_RenderTargetSpecularTexture",
+		"g_RenderTargetDepthTexture",
+		"g_RenderTargetObjInfoTexture",
+		"g_RenderTargetAOTexture",
+		"g_RenderTargetSceneHDRTexture",
+		"g_RenderTargetSceneHDRCopyTexture",
+		"g_RenderTargetBloomTexture",
+		"g_TransformMap",
+		"g_MaterialTextures",
+		"g_DefaultTextures",
+		"g_TextureCube",
+		"g_SSAONoiseTexture"
+	};
+	//===================
+	// AnimEvent
+	//===================
+	enum class EAnimNotifyId : unsigned int
+	{
+		CollisionOn,
+		CollisionOff,
+		FootStepL,
+		FootStepR,
+		Vfx_Oneshot,
+		Vfx_Attach_On,
+		Vfx_Attach_Off,
 
+		END
+	};
 	//===================
 	// Component
 	//===================
 	enum class EComponentType : unsigned int
 	{
 		TRANSFORM = 0,
-		MODEL,
 		NAVIGATION,
 		TEXTURE,
 		COLLIDER,
@@ -76,11 +188,14 @@ namespace Engine
 		ACTIONSTATE,
 		CAMERA,
 		SHADER,
+		BOUND,
 		//
 		PX_RIGIDBODY,
 		PX_COLLIDER,
 		PX_CCT,
+		PX_ATTACKOVERLAP,
 		//
+		MODEL,
 		SCRIPT,
 		
 		END
@@ -99,16 +214,6 @@ namespace Engine
 		END
 	};
 	inline constexpr size_t g_ResourceTypeCount = static_cast<size_t>(EResourceType::END);
-	//===================
-	// CollideMesh
-	//===================
-	enum class ESurfaceType : unsigned int
-	{
-		NONE = 0,
-		GROUND,
-		WALL,
-		CEILING,
-	};
 
 	//===================
 	// Model
@@ -159,6 +264,16 @@ namespace Engine
 		END
 	};
 	//===================
+	// MovementMode
+	//===================
+	enum class EFrustrumTier : unsigned int
+	{
+		Near = 0,
+		Mid,
+		Far,
+		None
+	};
+	//===================
 	// MaterialType
 	//===================
 	enum class EMaterialTextureType : unsigned int
@@ -184,8 +299,8 @@ namespace Engine
 		MAX_COUNT = 18
 	};
 	//===================
-// PhysicsShape
-//===================
+	// PhysicsShape
+	//===================
 	enum class EPhysicsShape : unsigned int
 	{
 		SPHERE,
@@ -255,32 +370,36 @@ namespace Engine
 		CONTINUOUS_SPECULATIVE,
 		END
 	};
-	enum class PHYSICSFILTERGROUP : PxU32
+
+	typedef struct tagPhysicsFilterGroup
 	{
-		PLAYER = 1 << 0,
-		ATTACK = 1 << 1,
-		SKILL = 1 << 2,
-		ATTACK_PROJECTTILE = 1 << 3,
-		SKILL_PROJECTTILE = 1 << 4,
-		 
-		MONSTER = 1 << 5,
-		MONSTER_ATTACK = 1 << 6,
-		MONSTER_SKILL = 1 << 7,
-		MONSTER_ATTACK_PROJECTTILE = 1 << 8,
-		MONSTER_SKILL_PROJECTTILE = 1 << 9,
+		enum Enum : unsigned int
+		{
+			PLAYER = 1 << 0,
+			ATTACK = 1 << 1,
+			SKILL = 1 << 2,
+			ATTACK_PROJECTTILE = 1 << 3,
+			SKILL_PROJECTTILE = 1 << 4,
 
-		MAP = 1 << 10,
+			MONSTER = 1 << 5,
+			MONSTER_ATTACK = 1 << 6,
+			MONSTER_SKILL = 1 << 7,
+			MONSTER_ATTACK_PROJECTTILE = 1 << 8,
+			MONSTER_SKILL_PROJECTTILE = 1 << 9,
 
-		OBJECT1 = 1 << 11,
-		OBJECT2 = 1 << 12,
+			MAP = 1 << 10,
 
-		TRIGGER_UI = 1 << 13,
-		TRIGGER_QUEST = 1 << 14,
-		TRIGGER_SPAWN = 1 << 15,
-		TRIGGER_DIRECTION = 1 << 16,
+			OBJECT1 = 1 << 11,
+			OBJECT2 = 1 << 12,
 
-		NONE = 1 << 17,
-		END
-	};
+			TRIGGER_UI = 1 << 13,
+			TRIGGER_QUEST = 1 << 14,
+			TRIGGER_SPAWN = 1 << 15,
+			TRIGGER_DIRECTION = 1 << 16,
+
+			NONE = 1 << 17,
+			END
+		};
+	}PHYSICSFILTERGROUP;
 }
 #endif // Engine_Enum_h__

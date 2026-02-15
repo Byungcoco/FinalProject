@@ -20,7 +20,23 @@ namespace Engine
 	}TOOL_DESC;
 #pragma endregion
 
-#pragma region Shader
+	struct AnimNotifyKey
+	{
+		EAnimNotifyId eID{ EAnimNotifyId::CollisionOn };
+		float fTrackPosition{ 0.f };
+
+		unsigned int  iParam0{ 0 };
+		unsigned int  iParam1{ 0 };
+		unsigned int  iParam2{ 0 };
+		unsigned int  iParam3{ 0 };
+		float		  fParam0{ 0.0f };
+		float		  fParam1{ 0.0f };
+		bool		  bParam0{ false };
+		bool		  bParam1{ false };
+		string		  strParam{ "" };
+	};
+
+#pragma region Shader_ConstantBuffer
 	typedef struct tagShaderGlobalDesc
 	{
 		Matrix matView = Matrix::Identity;
@@ -30,6 +46,8 @@ namespace Engine
 
 	typedef struct tagShaderInvDesc
 	{
+		Matrix matCamView = Matrix::Identity;
+		Matrix matCamProj = Matrix::Identity;
 		Matrix matInvView = Matrix::Identity;
 		Matrix matInvProj = Matrix::Identity;
 	}SHADER_INVDESC;
@@ -76,35 +94,99 @@ namespace Engine
 		SimpleMath::Vector4 vAmbient = { 0.5f, 0.5f, 0.5f, 1.f };
 		SimpleMath::Vector4 vSpecular = { 1.f, 1.f,1.f, 1.f };
 		SimpleMath::Vector4 vEmissive = { 1.f, 1.f,1.f, 1.f };
-		SimpleMath::Vector3 vPadding = {};
+		SimpleMath::Vector3 vPadding = { SimpleMath::Vector3::Zero };
 		float fEmissivePower = { 1.f };
 	}SHADER_MI_DESC;
+
+	typedef struct tagShaderObjectInfoDesc
+	{
+		unsigned int iObjectID{ 0 };
+		unsigned int Flags8{ 0 };
+		SimpleMath::Vector2 vPadding{ SimpleMath::Vector2::Zero};
+	}SHADER_OBJECTINFO_DESC;
+
+	typedef struct tagShaderSSAOKernelDesc
+	{
+		SimpleMath::Vector4 vKernel[16]{ SimpleMath::Vector4::Zero};
+		SimpleMath::Vector2 vNoiseScale{ SimpleMath::Vector2::Zero};
+		SimpleMath::Vector2 vPadding{ SimpleMath::Vector2::Zero };
+	}SHADER_SSAOKERNEL_DESC;
+
+	typedef struct tagShaderSSAOParamDesc
+	{
+		float fRadius{ 0.f };
+		float fBias{ 0.f };
+		float fPower{ 0.f };
+		float fIntensity{ 0.f };
+		float fFadeStart{ 0.f };
+		float fFadeEnd{ 0.f };
+		SimpleMath::Vector2 vInvSize{ 1.f, 1.f };
+	}SHADER_SSAOPARAM_DESC;
+
+	typedef struct tagShaderHDRParamDesc
+	{
+		float fExposure{1.5f};
+		float fGamma{2.2f};
+		SimpleMath::Vector2 vPadding{ SimpleMath::Vector2::Zero };
+	}SHADER_HDRPARAM_DESC;
+
+	typedef struct tagShaderBloomParamDesc
+	{
+		SimpleMath::Vector2 vInvSize{ 1.f, 1.f };
+		float fThreshold{ 0.f };
+		float fKnee{ 0.f };
+		float fIntensity{ 0.f };
+		SimpleMath::Vector3 vPadding{ SimpleMath::Vector3::Zero };
+	}SHADER_BLOOMPARAM_DESC;
+
+	typedef struct tagShaderOutlineParamDesc
+	{
+		SimpleMath::Vector4 vColor{ SimpleMath::Vector4::Zero };
+		SimpleMath::Vector2 vInvSize{ SimpleMath::Vector2::Zero };
+		float fThicknessPx{0.f};
+		float fOpacity{0.f};
+		float fNormalThreshold{0.f};
+		float fDepthThreshold{0.f};
+		float fNormalStrength{0.f};
+		float fDepthStrength{0.f};
+		float fFadeStart{0.f};
+		float fFadeEnd{0.f};
+		SimpleMath::Vector2 vPadding{ SimpleMath::Vector2::Zero };
+	}SHADER_OUTLINE_DESC;
 
 	typedef struct tagShaderEffectDesc
 	{
 		unsigned int iTextureFlags = { 0 };
 		unsigned int iRenderFlags = { 0 };
-		unsigned int  iSamplerStateFlags = {0};
+		unsigned int  iSamplerStateFlags = { 0 };
 		float iDiscardValue = { 0.f };
 
 		unsigned int iOperatorFlags = { 0 };
 		unsigned int iRotationFlags = { 0 };
-		SimpleMath::Vector2 vPadding1 = { 0.f, 0.f };
+		SimpleMath::Vector2 vUVOffset = { 0.f, 0.f };
 
 		// 스프라이트 정보 추가
-		unsigned int SpriteColCount = {};		// 가로 프레임 수
-		unsigned int SpriteRowCount = {};		// 세로 프레임 수
-		unsigned int CurSpriteIndex = {};		// 현재 스프라이트 인덱스
-		float		 Padding2 = {};
+		unsigned int SpriteColCount = {0};		// 가로 프레임 수
+		unsigned int SpriteRowCount = {0};		// 세로 프레임 수
+		unsigned int CurSpriteIndex = {0};		// 현재 스프라이트 인덱스
+		float		 fLifeRatio = {0.0f};
 
 		SimpleMath::Vector2 vScrollOffset = { 0.f, 0.f };
 		SimpleMath::Vector2 vDistortionScale = { 0.f, 0.f };
 		SimpleMath::Vector4 vEffectColor = { 0.f, 0.f, 0.f, 0.f };
+
+		SimpleMath::Vector2 DiffuseTexture_ScrollWeight = { 0.f, 0.f };
+		SimpleMath::Vector2 NoiseTexture_ScrollWeight = { 0.f, 0.f };
+		SimpleMath::Vector2 MaskingTexture_ScrollWeight = { 0.f, 0.f };
+		SimpleMath::Vector2 GradationTexture_ScrollWeight = { 0.f, 0.f };
+
+		SimpleMath::Vector2	DissolveTexture_ScrollWeight = { 0.f, 0.f };
+		SimpleMath::Vector2 Padding1 = { 0.f, 0.f };
 	}SHADER_EFFECT_DESC;
 
 	typedef struct tagShaderBoneDesc
 	{
-		SimpleMath::Matrix transforms[MAX_BONE_TRANSFORMS];
+		SimpleMath::Matrix transforms[MAX_BONE_TRANSFORMS]{ SimpleMath::Matrix::Identity};
 	}SHADER_BONEDESC;
 
 	struct AnimationData
@@ -174,6 +256,182 @@ namespace Engine
 		tagShaderTweenDesc tweens[MAX_MODEL_INSTANCE];
 	}SHADER_INST_TWEENDESC;
 #pragma endregion
+
+#pragma region Shader_StructuredBuffer
+
+	// 불변 데이터 (한번 바인딩 하면 바뀌지 않는 데이터)
+	typedef struct tagEffect_Particle_IMMU_ELEMENT
+	{
+		SimpleMath::Vector4		vRight = { 0.f, 0.f, 0.f, 0.f };
+		SimpleMath::Vector4		vUp = { 0.f, 0.f, 0.f, 0.f };
+		SimpleMath::Vector4		vLook = { 0.f, 0.f, 0.f, 0.f };
+		SimpleMath::Vector4		vTranslation = { 0.f, 0.f, 0.f, 1.f };
+		SimpleMath::Vector2		vParticle_LifeTime = { 0.f, 0.f };
+
+		// 연산용 Speed 함수
+		float fSpeed = { 1.f };
+		float fPadding = { 1.f };
+		SimpleMath::Matrix vParticle_OriginMatrix = {};
+	}EFFECT_PARTICLE_IMMU_ELEMENT;
+
+	// 가변 데이터 (CS에서 값이 계속 바뀌는 것들)
+	typedef struct tagEffect_Particle_MU_ELEMENT
+	{
+		// 시간 제어 관련
+		float				fTimeDelta = { 0.f };		// 시간 값
+		float				fTotalTime = { 0.f };
+		float				fDuration = { 0.f };
+		float				fStartDelay = { 0.f };
+
+		// 상태 플래그
+		unsigned int		iMoveState = { 0 };
+		int					bIsLoop = { 0 };
+		unsigned int		iTimeFlag = {};
+		float				fGravity = { 9.8f };
+
+		// 위치 및 방향
+		SimpleMath::Vector3	vPivot = {};	// Spread시 기준점
+		float Padding1 = {};
+		SimpleMath::Vector3 vLook = {};		// Straight시 방향
+		float Padding2 = {};
+
+		float				fStartSpeed = { 0.f };
+		float				fSpiralRadius = { 0.f };
+		float				fSpiralSpeed = { 0.f };
+		float				Padding3 = {};
+
+		// 
+
+	}EFFECT_PARTICLE_MU_ELEMENT;
+#pragma endregion
+
+#pragma region Model_ComShader_Structures
+
+#pragma region BONEFIANL_CS
+
+	typedef struct tagBoneMeshCB
+	{
+		unsigned int				iAffectBoneNums = { 0 };
+		unsigned int				iTotalBoneNums = { 0 };
+		SimpleMath::Vector2			Padding0 = {};
+	}CS_CB_MU_BONEMESH;
+
+	typedef struct tagBoneMeshIMMU
+	{
+		unsigned int				iAffectBoneIndex = { 0 };
+		SimpleMath::Vector3			Padding0 = {};
+
+		SimpleMath::Matrix			matOffsetTransform = {};
+	}CS_IMMU_BONEMESH;
+
+#pragma endregion
+
+#pragma region BONECOM_CS
+
+	// output
+	typedef struct tagSRT
+	{
+		SimpleMath::Vector3         vScale;
+		float						Padding0;
+	
+		SimpleMath::Vector4			vQuat;
+
+		SimpleMath::Vector3			vTranslation;
+		float						Padding1;
+	}CS_SRT;
+	 
+	// 불변 데이터
+	typedef struct tagBone_Immu_Element
+	{
+		int			iParentIndex = { -1 };
+		SimpleMath::Vector3 Padding0 = {};
+
+		SimpleMath::Matrix matPreTransform = {};
+	}CS_IMMU_BONE;
+
+	// 가변 데이터 : cpu
+	typedef struct tagBone_Mu_Element
+	{
+		int			iMyIdx = { -1 };
+
+		SimpleMath::Vector3 Padding0 = {};
+	}CS_MU_BONEIDX;
+
+	// 가변 데이터 : cpu
+	typedef struct tagBone_Mu_Group
+	{
+		unsigned int		iGroupBoneNums = {0};
+
+		SimpleMath::Vector3 Padding0 = {};
+	}CS_MU_GROUPNUMS;
+
+	// output : 만약 바로 vs로 넘긴다면 필요 없지만
+	// 충돌이나 여기 저기에서 사용할 수 있어서 일단 만들어 둠
+	typedef struct tagBone_Output
+	{
+		SimpleMath::Matrix matCombinedTransform = { };
+	}CS_OUT_BONE;
+#pragma endregion
+
+#pragma region ANIM_EVAL_CS
+	// 불변 데이터
+	typedef struct tagAnimE_Immu_KeyFrame
+	{
+		SimpleMath::Vector3  vScale = { 1.f,1.f,1.f };
+		float   fTrackPosition = { 0.f };
+
+		SimpleMath::Vector4  vQuat = {};
+
+		SimpleMath::Vector3  vTranslation = {};
+		float   fPadding0 = { 0.f };
+	}CS_IMMU_ANIM_KEYFRAME;
+
+	// 불변 데이터 : cpu
+	typedef struct tagAnimE_Immu_ChannelData
+	{
+		int     iBoneIndex = { -1 };             // 내 bone transform을 잘 업데이트 하기 위함
+		int     iRootMotionBoneIndex = { -1 };   // root motion일 경우 tralation을 0으로 만들기 위함
+
+		unsigned int    iKeyStart = { 0 };              // 키프레임 시작 위치
+		unsigned int    iKeyCount = { 0 };              // 키프레임 개수
+	}CS_IMMU_ANIM_CHANNELDATA;
+
+	// 가변 데이터 : cpu
+	typedef struct tagBone_Mu_Track
+	{
+		float   fCurTrackPosition = { 0.f };
+		unsigned int iChannelCount = { 0 };
+
+		SimpleMath::Vector2  Padding0 = {};
+	}CS_MU_TRACK;
+#pragma endregion
+
+#pragma region ANIM_Blendd_CS
+	// 가변 데이터
+	typedef struct tagAnimB_Immu_Ratio
+	{
+		int						iRootMotionBoneIndex = { -1 }; // root motion일 경우 tralation을 0으로 만들기 위함
+		float					fRatio = { 0.f };
+
+		unsigned int     iBoneCount = {0};
+		float  Padding0 = { 0.f };
+	}CS_MU_ANIMB;
+
+	// output
+	//typedef struct tagBone_Output
+	//{
+	//	float3              vScale;
+	//	uint                iCurKeyFrameIndex;
+
+	//	float4              vQuat;
+
+	//	float3              vTranslation;
+	//	uint                iAnimIndex
+	//}CS_OUT_ANIME;
+#pragma endregion
+
+#pragma endregion
+
 
 	union COLLIDER_ID
 	{
@@ -277,6 +535,9 @@ namespace Engine
 
 	typedef struct tagPhysicsCCT
 	{
+		class CGameObject* pOwner = { nullptr };
+		bool bIsPlayer = { false };
+
 		EPhysicsCCTType eType = { EPhysicsCCTType::CAPSULE };
 		const Matrix* pOwnerMatrix = { nullptr };
 		float fRadius = {};
@@ -290,8 +551,19 @@ namespace Engine
 		////////////////
 		PHYSICSMATERIAL_DESC tMaterial = {};
 
-		class CGameObject* pOwner = { nullptr };
+		////////////////////////
+		/// Collision Filter ///
+		////////////////////////
+		PHYSICSFILTERGROUP::Enum eFilterLayer = PHYSICSFILTERGROUP::Enum::NONE;
+		unsigned int iFilterMask = {};
 	}PHYSICSCCT_DESC;
+
+	typedef struct tagPhysicsSRT
+	{
+		SimpleMath::Vector3 vScale = {};
+		SimpleMath::Quaternion vQuat = {};
+		SimpleMath::Vector3 vPosition = {};
+	}PHYSICS_SRT;
 
 	typedef struct tagPhysicsRigidBody
 	{
@@ -304,8 +576,36 @@ namespace Engine
 		float fLinearDamping = {};
 		float fAngularDamping = {};
 
-		const Matrix* pOwnerMatrix = { nullptr };
+		vector<Matrix> pOwnerMatrices;
+		vector<PHYSICS_SRT> vecSRT{};
 	}PHYSICSRIGIDBODY_DESC;
+
+	typedef struct tagOctreeDesc
+	{
+		BoundingBox rootBounds;
+		int iMaxDepth{ 5 };
+		float fLooseFactor{ 1.3f };
+		float fMinNodeSizeXZ{ 2.0f }; // Extents와 비교할거라 중심에서의 거리
+		size_t iMaxItemsPerLeaf{ 128 };
+	}OCTREE_DESC;
+
+	typedef struct tagPass
+	{
+		ID3DX11EffectPass* pPass = { nullptr };
+		wstring wstrName = L"";
+		D3DX11_PASS_DESC tDesc = {};
+		D3DX11_PASS_SHADER_DESC tVertexShaderDesc = {};
+		D3DX11_EFFECT_SHADER_DESC tEffectVsDesc = {};
+		vector<D3D11_SIGNATURE_PARAMETER_DESC> vecSignatureDescs;
+	} PASS;
+
+	typedef struct tagTechnique
+	{
+		ID3DX11EffectTechnique* pTechnique = { nullptr };
+		wstring wstrName = L"";
+		D3DX11_TECHNIQUE_DESC tDesc = {};
+		vector<tagPass> vecPasses;
+	} TECHNIQUE;
 
 	typedef struct tagPhysicsCollider
 	{
@@ -357,7 +657,8 @@ namespace Engine
 		////////////////////////
 		/// Collision Filter ///
 		////////////////////////
-		PHYSICSFILTERGROUP eFilterGroup = PHYSICSFILTERGROUP::NONE;
+		bool bSetOnlyFilter = { false };
+		PHYSICSFILTERGROUP::Enum eFilterLayer = PHYSICSFILTERGROUP::Enum::NONE;
 		unsigned int iFilterMask = {};
 	}PHYSICSCOLLIDER_DESC;
 

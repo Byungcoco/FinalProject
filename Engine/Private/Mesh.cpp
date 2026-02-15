@@ -3,26 +3,40 @@
 #include "Bone.h"
 #include "Ray.h"
 #include "Shader.h"
+
+#include "ComputeShader.h"
+#include "StructuredBuffer.h"
+
 #include "GameInstance.h"
 
 CMesh::CMesh(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
 	: Super(pDevice, pDeviceContext)
 {
-	for (Matrix& matBone : m_boneMatrices.transforms)
-		matBone = Matrix::Identity;
 }
 
 CMesh::CMesh(const CMesh& rhs)
 	: Super(rhs)
+	, m_bHasMinMax(rhs.m_bHasMinMax)
 	, m_iMaterialIndex(rhs.m_iMaterialIndex)
 	, m_iAffectBoneCount(rhs.m_iAffectBoneCount)
-	, m_vecAffectBoneIndices(rhs.m_vecAffectBoneIndices)
-	, m_boneMatrices(rhs.m_boneMatrices)
-	, m_vecOffsetMatrices(rhs.m_vecOffsetMatrices)
+	, m_iOffsetMatrixCount(rhs.m_iOffsetMatrixCount)
+	, m_tBoneMatrices(rhs.m_tBoneMatrices)
+	, m_pMinMax(rhs.m_pMinMax)
+	, m_pOffsetMatrices(rhs.m_pOffsetMatrices)
+	, m_pAffectBoneIndices(rhs.m_pAffectBoneIndices)
 	, m_pNormals(rhs.m_pNormals)
-	, m_pSurfaceTypes(rhs.m_pSurfaceTypes)
+	,m_pBoneMesh_ImmuBuffer(rhs.m_pBoneMesh_ImmuBuffer)
 {
+
+	//Safe_AddRef(m_pInputKeySB_SRV);
+
 	::strcpy_s(m_szName, rhs.m_szName);
+
+	//if (m_eModelType == EModelType::ANIM)
+	//{
+	//	m_pBoneMesh_ImmuBuffer = rhs.m_pBoneMesh_ImmuBuffer;
+	//	Safe_AddRef(m_pBoneMesh_ImmuBuffer);
+	//}
 }
 
 // ModelLoader가 PreMatrix, Bone 등 처리 다 해서 넘기기
@@ -46,17 +60,24 @@ HRESULT CMesh::Initialize_Prototype(void* pArg)
 	m_eIndexFormat = DXGI_FORMAT::DXGI_FORMAT_R32_UINT;
 	m_iIndexCount = pDesc->iIndexCount;
 
-	m_iAffectBoneCount = pDesc->iAffectBoneCount;
-	if (m_iAffectBoneCount > 0)
+	if (pDesc->iAffectBoneCount > 0)
 	{
-		m_vecAffectBoneIndices.resize(m_iAffectBoneCount);
-		::memcpy(m_vecAffectBoneIndices.data(), pDesc->spanAffectBoneIndex.data(), sizeof(_uint) * m_iAffectBoneCount);
+		m_iAffectBoneCount = pDesc->iAffectBoneCount;
+		m_pAffectBoneIndices = new _uint[m_iAffectBoneCount];
+		::memcpy(m_pAffectBoneIndices, pDesc->spanAffectBoneIndex.data(), sizeof(_uint) * m_iAffectBoneCount);
 	}
 
 	if (pDesc->iOffsetMatricesCount > 0)
 	{
-		m_vecOffsetMatrices.resize(pDesc->iOffsetMatricesCount);
-		::memcpy(m_vecOffsetMatrices.data(), pDesc->spanOffsetMatrices.data(), sizeof(Matrix) * pDesc->iOffsetMatricesCount);
+		m_iOffsetMatrixCount = pDesc->iOffsetMatricesCount;
+		m_pOffsetMatrices = new Matrix[m_iOffsetMatrixCount];
+		::memcpy(m_pOffsetMatrices, pDesc->spanOffsetMatrices.data(), sizeof(Matrix) * m_iOffsetMatrixCount);
+	}
+
+	if (pDesc->iMinMaxCount > 0)
+	{
+		m_pMinMax = new Vec3[pDesc->iMinMaxCount];
+		::memcpy(m_pMinMax, pDesc->spanMinMax.data(), sizeof(Vec3) * 2);
 	}
 
 	m_pVertexPositions = new SimpleMath::Vector3[m_iVertexCount];
@@ -66,11 +87,13 @@ HRESULT CMesh::Initialize_Prototype(void* pArg)
 	}
 
 	HRESULT hr = {};
-	switch (pDesc->eModelType)
+	m_eModelType = pDesc->eModelType;
+	switch (m_eModelType)
 	{
 	case EModelType::ANIM:
 	{
 		hr = Load_AnimVertices(pDesc->spanVertex);
+		Ready_CS_Buffer();
 	} break;
 	case EModelType::NONANIM:
 	{
@@ -115,7 +138,6 @@ HRESULT CMesh::Initialize_Prototype(void* pArg)
 		const _uint iTriangleCount = m_iIndexCount / 3;
 
 		m_pNormals = new Vec3[iTriangleCount];
-		m_pSurfaceTypes = new ESurfaceType[iTriangleCount];
 		_uint iIndex = { 0 };
 		for (_uint i = 0; i < iTriangleCount; ++i)
 		{
@@ -127,20 +149,9 @@ HRESULT CMesh::Initialize_Prototype(void* pArg)
 			Vec3 vAC = vC - vA;
 			Vec3 vNormal = vAB.Cross(vAC);
 			vNormal.Normalize();
-
-			ESurfaceType eType = ESurfaceType::CEILING;
-			const _float fDot = vNormal.Dot(Vec3::Up);
-			const _float fCosGroundMax = ::cosf(::XMConvertToRadians(50.f));
-
-			if (fDot >= fCosGroundMax)
-				eType = ESurfaceType::GROUND;
-			else if (fDot > -0.1f)
-				eType = ESurfaceType::WALL;
-
 			m_pNormals[i] = vNormal;
-			m_pSurfaceTypes[i] = eType;
 		}
-	}
+	} 
 
 	return S_OK;
 }
@@ -155,16 +166,56 @@ HRESULT CMesh::Initialize(void* pArg)
 
 HRESULT CMesh::Bind_Bones(CShader* pShader, const vector<CBone*>& vecBones, _uint iIndexDistance)
 {
-	for (size_t i = 0; i < m_vecAffectBoneIndices.size(); ++i)
+	for (size_t i = 0; i < m_iAffectBoneCount; ++i)
 	{
-		m_boneMatrices.transforms[i + iIndexDistance]
-			= m_vecOffsetMatrices[i] * vecBones[m_vecAffectBoneIndices[i]]->Get_CombinedTransformMatrix();
+		m_tBoneMatrices.transforms[i + iIndexDistance]
+			= m_pOffsetMatrices[i] * vecBones[m_pAffectBoneIndices[i]]->Get_CombinedTransformMatrix();
 	}
-	return pShader->Bind_BoneData(m_boneMatrices);
+	return pShader->Bind_BoneData(m_tBoneMatrices);
+}
+
+HRESULT CMesh::Bind_Bones(CShader* pShader, CComputeShader* pBoneMeshCS,CComputeShader* pBoneCombineCS, _uint iTotalBoneNum, _uint iIndexDistance)
+{
+	// null 체크
+	if (pShader			== nullptr ||
+		pBoneMeshCS		== nullptr ||
+		pBoneCombineCS	== nullptr)
+		return E_FAIL;
+
+	// 현재 mesh가 들고 있는 정보 : offsetMat, affect idx 전달
+	pBoneMeshCS->Bind_InputStructuredBuffer(ENUM_TO_UINT(CS_BONEMESH_IDX::IMMU_OFFSETMAT), m_pBoneMeshSB_SRV, m_pBoneMesh_ImmuBuffer);
+
+	// boneCombine 정보 전달
+	pBoneMeshCS->Bind_InputStructuredBuffer(ENUM_TO_UINT(CS_BONEMESH_IDX::MU_COMBINEMAT),
+		pBoneMeshCS->Get_SRV("MU_COMBINEMAT"), pBoneCombineCS->Get_Output_Buffer());
+
+	// 가변 데이터 작성
+	CS_CB_MU_BONEMESH tMuDesc{};
+	tMuDesc.iAffectBoneNums = m_iAffectBoneCount;
+	tMuDesc.iTotalBoneNums = iTotalBoneNum;
+	pBoneMeshCS->Bind_Compute_BoneMeshCB(tMuDesc);
+
+	// dispatch
+	_uint iGroupX = (iTotalBoneNum + 31) / 32;
+	pBoneMeshCS->Dispatch(iGroupX, 1, 1);
+
+	// Compute 셰이더가 들고있는 SRV를, Default Shader한테 SRV 꽂아주기.
+	{
+		ID3D11ShaderResourceView* pResultSRV = pBoneMeshCS->Get_Output_Buffer()->Get_SRV();
+
+		ID3DX11EffectShaderResourceVariable* pSRVar = pShader->Get_SRV("MU_BONEMATS");
+		if (pSRVar)
+			pSRVar->SetResource(pResultSRV);
+	}
+
+	return S_OK;
 }
 
 _bool CMesh::IntsersectWithPlane(OUT Vec3& vOut)
 {
+	if (m_iIndexCount == 0 || !m_pVertexPositions || !m_pIndices)
+		return false;
+
 	const _uint iTriangleCount = m_iIndexCount / 3;
 	_uint iIndex = { 0 };
 	for (_uint i = 0; i < iTriangleCount; ++i)
@@ -177,6 +228,40 @@ _bool CMesh::IntsersectWithPlane(OUT Vec3& vOut)
 		}
 	}
 	return false;
+}
+
+_bool CMesh::IntsersectWithPlane_CloseCam(OUT Vec3& vOut, const Vec3& vLocalCamPos)
+{
+	if (m_iIndexCount == 0 || !m_pVertexPositions || !m_pIndices)
+		return false;
+
+	vector<Vec3> vecPickPos{};
+	vecPickPos.reserve(10);
+
+	const _uint iTriangleCount = m_iIndexCount / 3;
+	_uint iIndex = { 0 };
+	for (_uint i = 0; i < iTriangleCount; ++i)
+	{
+		Vec3 vPickPos{Vec3::Zero};
+		if (m_pGameInstance->IntersectrayWithTriangle_Local(m_pVertexPositions[m_pIndices[iIndex++]],
+			m_pVertexPositions[m_pIndices[iIndex++]],
+			m_pVertexPositions[m_pIndices[iIndex++]], vOut))
+		{
+			vecPickPos.push_back(vOut);
+		}
+	}
+
+	if (vecPickPos.empty())
+		return false;
+
+	std::sort(vecPickPos.begin(), vecPickPos.end(), [vLocalCamPos](const Vec3& a, const Vec3& b) { 
+		float fDistA = Vec3::DistanceSquared(vLocalCamPos, a);
+		float fDistB = Vec3::DistanceSquared(vLocalCamPos, b);
+		return fDistA < fDistB; 
+		});
+
+	vOut = vecPickPos.front();
+	return true;
 }
 
 _bool CMesh::IntsersectWithPlane(CRay* const pRay, Matrix matWorld, _float fMaxDistance, OUT MESH_RAY_HITINFO& outHit)
@@ -215,7 +300,6 @@ _bool CMesh::IntsersectWithPlane(CRay* const pRay, Matrix matWorld, _float fMaxD
 		bestHit.fDistance = fDistance;
 		bestHit.iTriangleIndex = static_cast<_int>(i);
 		bestHit.vNormal = m_pNormals[i];
-		bestHit.eSurfaceType = m_pSurfaceTypes[i];
 		bestHit.vHitPos = vHitted;
 		bHit = true;
 	}
@@ -285,6 +369,47 @@ HRESULT CMesh::Load_NonAnimVertices(std::span<VTXANIMMESH> spanVertex)
 	return S_OK;
 }
 
+HRESULT CMesh::Ready_CS_Buffer()
+{
+
+
+	//if (m_pBoneMesh_ImmuBuffer == nullptr)
+	//	return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CMesh::Ready_BindCSBuffer(CComputeShader* pBoneMeshCS)
+{
+	m_pBoneMesh_ImmuBuffer = StructuredBuffer::Create(m_pDevice, m_pDeviceContext, sizeof(CS_IMMU_BONEMESH), m_iAffectBoneCount);
+
+	_uint iAffectSize = m_iAffectBoneCount;
+	CS_IMMU_BONEMESH* pIniailData = new CS_IMMU_BONEMESH[iAffectSize];
+
+	// 2. 버퍼 내용을 쓴다
+	for (size_t i = 0; i < m_iAffectBoneCount; ++i)
+	{
+		pIniailData[i].iAffectBoneIndex = m_pAffectBoneIndices[i];
+		pIniailData[i].matOffsetTransform = m_pOffsetMatrices[i];
+		pIniailData[i].Padding0 = Vector3::Zero;
+	}
+
+	// 4. buffer에 값 넣어줌
+	m_pBoneMesh_ImmuBuffer->Copy_Data(pIniailData, sizeof(CS_IMMU_BONEMESH), iAffectSize);
+
+	// 5. 동적배열 정리
+	Safe_Delete_Array(pIniailData);
+
+	// 4. SRV 연결
+	m_pBoneMeshSB_SRV = pBoneMeshCS->Get_SRV("IMMU_OFFSETMAT");
+	m_pBoneMeshSB_SRV->SetResource(m_pBoneMesh_ImmuBuffer->Get_SRV());
+
+	if (m_pBoneMeshSB_SRV == nullptr)
+		return E_FAIL;
+
+	return S_OK;
+}
+
 CMesh* CMesh::Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, void* pArg)
 {
 	CMesh* pInstance = new CMesh(pDevice, pDeviceContext);
@@ -311,8 +436,21 @@ void CMesh::Free()
 { 
 	if (IsClone() == false)
 	{
+		Safe_Delete_Array(m_pOffsetMatrices);
 		Safe_Delete_Array(m_pNormals);
-		Safe_Delete_Array(m_pSurfaceTypes);
+		Safe_Delete_Array(m_pAffectBoneIndices);
+		Safe_Delete_Array(m_pMinMax);
 	}
+
+	if (m_eModelType == EModelType::ANIM)
+	{
+
+		if (IsClone() == false)
+		{
+			Safe_Release(m_pBoneMesh_ImmuBuffer);
+			Safe_Release(m_pBoneMeshSB_SRV);
+		}
+	}
+
 	Super::Free();
 }

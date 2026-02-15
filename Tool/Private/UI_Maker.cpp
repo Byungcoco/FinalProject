@@ -2,15 +2,11 @@
 #include "UI_Maker.h"
 #include "ImGui_ToolManager.h"
 #include "ImGui_UIManager.h"
-#include "UIData_Repository.h"
 #include "ToolCanvas.h"
 #include "ToolUI.h"
-#include "ToolLayer.h"
 #include "Engine_Utils.h"
 
-#include "UIAction_Registry.h"
 #include "DataStruct_UI.h"
-#include "IUIActionForMe.h"
 #include "GameInstance.h"
 
 CUI_Maker::CUI_Maker(const _char* pLabel, CLevel* pOwner, ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
@@ -53,13 +49,9 @@ HRESULT CUI_Maker::Render(CToolObject* pGo)
 
 	if (0 < m_pUIManager->Get_NumCanvas())
 	{
-		Make_Layer();
-
-		if (0 < m_pUIManager->Get_NumLayer())
-		{
-			Make_UI();
-		}
+		Make_UI();
 	}
+
 	ImGui::End();
 	return S_OK;
 }
@@ -111,7 +103,6 @@ void CUI_Maker::UIData_IO()
 
 		if (::GetOpenFileNameW(&ofn) == TRUE)
 		{
-			CUIData_Repository::GetInstance()->Load_UIData(szFile);
 		}
 	}
 
@@ -127,7 +118,9 @@ void CUI_Maker::UIData_IO()
 	ImGui::Spacing();
 
 	if (DrawBottomFullButton("Clear All"))
-		int a = 0;
+	{
+		m_pUIManager->Clear();
+	}
 
 	ImGui::EndChild();
 
@@ -142,7 +135,7 @@ void CUI_Maker::UIData_IO()
 	ImGui::Spacing();
 
 	if (DrawBottomFullButton("Save UI"))
-		CUIData_Repository::GetInstance()->Save_UIData();
+		int a = 0;
 
 	ImGui::EndChild();
 	ImGui::PopID();
@@ -278,8 +271,15 @@ void CUI_Maker::Make_Canvas()
 				}
 				else
 				{
-					if(FAILED(m_pUIManager->Safe_Add_Canvas(dynamic_cast<CToolCanvas*>(pResult))))
-						ImGui::PopID();
+					auto* pCanvas = dynamic_cast<CToolCanvas*>(pResult);
+					if (nullptr != pCanvas)
+					{
+						if(FAILED(m_pUIManager->Safe_Add_Canvas(pCanvas)))
+							ImGui::PopID();
+							
+						if(FAILED(m_pUIManager->Safe_Add_CanvasCache(m_strCanvasTag, pCanvas)))
+							ImGui::PopID();
+					}
 				}
 				m_strCanvasTag = "";
 				m_isCreateCanvas = FALSE;
@@ -289,173 +289,11 @@ void CUI_Maker::Make_Canvas()
 	ImGui::PopID();
 }
 
-void CUI_Maker::Make_Layer()
-{
-	ImGui::PushID("EditLayers");
-	ImGui::SeparatorText("Layers");
-	ImGui::BeginChild("LayersCard", ImVec2(0, 240.f), true);
-	struct ImGui_LayersCard_Guard
-	{
-		~ImGui_LayersCard_Guard()
-		{
-			ImGui::EndChild();
-			ImGui::PopID();
-		}
-	} Guard;
-
-	/* 레이어 태그 지정 =========================== */
-	ImGui::TextDisabled("Create a layer by tag. Tags must be unique.");
-	ImGui::Spacing();
-	{
-		const float fSpacing = ImGui::GetStyle().ItemSpacing.x;
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("LayerTag");
-		ImGui::SameLine(90.f);
-		const float fAvailAfterLabel = ImGui::GetContentRegionAvail().x;
-		const float fBtnW = ImMin(140.f, fAvailAfterLabel * 0.28f);
-		float fInputW = fAvailAfterLabel - fSpacing - fBtnW;
-		if (fInputW < 10.f) fInputW = 10.f;
-		ImGui::SetNextItemWidth(fInputW);
-		ImGui::InputText("##LayerTag", &m_strLayerTag);
-		ImGui::SameLine();
-
-		if (ImGui::Button("Create", ImVec2(fBtnW, 0.f)))
-			m_isCreateLayer = TRUE;
-
-		/* 레이어 만들기 버튼을 눌렀을 때 ========================= */
-		if (m_isCreateLayer)
-		{
-			if ("" == m_strLayerTag)
-			{
-				MSG_BOX("CUI_Maker::Make_Layers, Empty Tag");
-				m_isCreateLayer = FALSE;
-			}
-			/* 태그가 없을 때 =============================== */
-			else
-			{
-				vector<CToolLayer*>* pLayerVec = {nullptr};
-				int32_t iNumLayer = m_pUIManager->Get_NumLayer();
-				for (int32_t i = 0; i < iNumLayer; ++i)
-				{
-					if (i == 0)
-					{
-						pLayerVec = m_pUIManager->Safe_Access_LayerVector();
-						if (nullptr == pLayerVec)
-						{
-							m_strLayerTag = "";
-							m_isCreateLayer = FALSE;
-							break;
-						}
-					}
-					if (m_strLayerTag == (*pLayerVec)[i]->Get_Name())
-					{
-						MSG_BOX("CUI_Maker::Make_Layers, This LayerTag Already Exist in Currnet Canvas");
-						m_isCreateLayer = FALSE;
-						m_strLayerTag = "";
-					}
-				}
-
-				/* 중복 태그가 없을 때 =========================== */
-				if (m_isCreateLayer)
-				{
-					CToolLayer::TOOLLAYER_DESC Desc = {};
-					Desc.strTag = m_strLayerTag;
-					Desc.iLevelIndex = static_cast<uint32_t>(ELevelType::UI);
-					auto* pCanvas = m_pUIManager->Safe_Access_Canvas(m_pUIManager->Get_CurCanvasIndex());
-					if(nullptr != pCanvas)
-						Desc.strCanvasName = pCanvas->Get_Tag();
-					Desc.iCanvasIndex = m_pUIManager->Get_CurCanvasIndex();
-					
-					_wstring wstrLayerTag = Engine_Utils::ToWString(Desc.strCanvasName) + L"_Layer";
-					CGameObject* pResult =
-						CGameInstance::GetInstance()->Add_GameObject(Desc.iLevelIndex, g_wszPrototypeTagLayer, Desc.iLevelIndex, wstrLayerTag, &Desc);
-					if (nullptr == pResult)
-					{
-						m_strLayerTag = "";
-						m_isCreateLayer = FALSE;
-						MSG_BOX("CUI_Maker::Make_Layers, Layer Create Failed");
-					}
-					else
-					{
-						CToolCanvas* pCanvas = m_pUIManager->Safe_Access_Canvas(m_pUIManager->Get_CurCanvasIndex());
-						if (nullptr != pCanvas)
-						{
-							if (FAILED(pCanvas->Safe_Add_Layer(dynamic_cast<CToolLayer*>(pResult))))
-							{
-								m_strLayerTag = "";
-								m_isCreateLayer = FALSE;
-								MSG_BOX("CUI_Maker::Make_Layers, Layer Add Failed");
-							}
-						}
-					}
-					m_strLayerTag = "";
-					m_isCreateLayer = FALSE;
-				}
-			}
-		}
-	}
-
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-	const int32_t iNumLayer = m_pUIManager->Get_NumLayer();
-	int32_t iCurLayer = m_pUIManager->Get_CurLayerIndex();
-	if (0 < iNumLayer)
-	{
-		if (nullptr == m_pUIManager->Safe_Access_Layer(iCurLayer))
-		{
-			m_pUIManager->Safe_Change_Layer(0);
-			iCurLayer = 0;
-		}
-		else
-		{
-			ImGui::TextDisabled("Select Layer");
-			ImGui::BeginChild("LAYER LIST", ImVec2(0, 92.f), true);
-
-			if (ImGui::BeginTable("##LayerTable", 2, ImGuiTableFlags_SizingStretchProp))
-			{
-				ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-				ImGui::TableSetupColumn("Btn", ImGuiTableColumnFlags_WidthFixed, 56.f);
-
-				for (int32_t i = 0; i < iNumLayer; ++i)
-				{
-					auto* pLayer = m_pUIManager->Safe_Access_Layer(i);
-					if (nullptr == pLayer)
-						continue;
-
-					ImGui::PushID(i);
-					ImGui::TableNextRow();
-
-					ImGui::TableSetColumnIndex(0);
-					const bool selected = (m_pUIManager->Get_CurLayerIndex() == i);
-					if (ImGui::Selectable(pLayer->Get_Name().c_str(), selected))
-						m_pUIManager->Safe_Change_Layer(i);
-
-					ImGui::TableSetColumnIndex(1);
-					if (ImGui::SmallButton("Visible"))
-					{
-						CToolLayer* pLayer = m_pUIManager->Safe_Access_Layer(i);
-						if (nullptr != pLayer)
-							pLayer->Set_isVisible(!pLayer->Get_isVisible());
-					}
-					ImGui::PopID();
-				}
-				ImGui::EndTable();
-			}
-			ImGui::EndChild();
-		}
-	}
-	else
-	{
-		ImGui::TextDisabled("No Layer.");
-	}
-}
-
 void CUI_Maker::Make_UI()
 {
 	ImGui::PushID("UISection");
 	ImGui::SeparatorText("UI");
-	ImGui::BeginChild("UICard", ImVec2(0, 240.f), true, ImGuiWindowFlags_NoScrollbar);
+	ImGui::BeginChild("UICard", ImVec2(0, 400.f), true, ImGuiWindowFlags_NoScrollbar);
 	ImGui::TextDisabled("Create / manage UI in current layer.");
 	ImGui::Spacing();
 
@@ -515,46 +353,45 @@ void CUI_Maker::Make_UI()
 					Desc.fWidth = 100.f;
 					Desc.strName = m_strUIName;
 					auto* pCanvas = m_pUIManager->Safe_Access_Canvas(m_pUIManager->Get_CurCanvasIndex());
-					if(nullptr != pCanvas)
+					if (nullptr != pCanvas)
+					{
 						Desc.strCanvasName = pCanvas->Get_Tag();
-					auto* pLayer = m_pUIManager->Safe_Access_Layer(m_pUIManager->Get_CurLayerIndex());
-					if(nullptr != pLayer)
-						Desc.strLayerName = pLayer->Get_Name();
+						Desc.pCacheCanvas = pCanvas;
+					}
 
 					Desc.iCanvasIndex = m_pUIManager->Get_CurCanvasIndex();
-					Desc.iLayerIndex = m_pUIManager->Get_CurLayerIndex();
 					Desc.isAlpha = TRUE;
 					Desc.isInitVisible = TRUE;
-					Desc.strInitTextureTag = "Prototype_Component_UI_Texture";
-					Desc.iInitTextureIndex = 1;
+					Desc.strInitTextureTag = "Prototype_Component_Texture_Empty";
 
-					if (nullptr != pLayer)
+					_wstring wstrLayerTag = Engine_Utils::ToWString(pCanvas->Get_Tag()) + L"_Layer";
+					CGameObject* pResult =
+						CGameInstance::GetInstance()->Add_GameObject(Desc.iLevelIndex, g_wszPrototypeTagUI, Desc.iLevelIndex, wstrLayerTag, &Desc);
+
+					if (nullptr == pResult)
 					{
-						_wstring wstrLayerTag = Engine_Utils::ToWString(Desc.strCanvasName) + L"_Layer";
-						CGameObject* pResult =
-							CGameInstance::GetInstance()->Add_GameObject(Desc.iLevelIndex, g_wszPrototypeTagUI, Desc.iLevelIndex, wstrLayerTag, &Desc);
-
-						if (nullptr == pResult)
-						{
-							m_strUIName = "";
-							m_isCreateUI = FALSE;
-							MSG_BOX("CUI_Maker::Make_Layers, Layer Create Failed");
-						}
-						else
-						{
-							auto* pUI = dynamic_cast<CToolUI*>(pResult);
-							if (nullptr != pUI) {
-								if (FAILED(pLayer->Safe_Add_UI(pUI)))
-								{
-									m_strUIName = "";
-									m_isCreateUI = FALSE;
-									MSG_BOX("CUI_Maker::Make_UI, UI Add Failed");
-								}
-
-								//pUI->Bind_Action(DTO::EUIEvent::HOVER_ENTER, (DTO::EUIAction::SET_TEXTURE_INDEX), json{ {"index", 7u} });
-								//pUI->Bind_Action(DTO::EUIEvent::HOVER_EXIT, (DTO::EUIAction::SET_VISIBLE), json{ {"isVisible", false} });
-								//pUI->Bind_Action(DTO::EUIEvent::HOVER_ENTER, (DTO::EUIAction::SET_VISIBLE), json{ {"isVisible", false} });
+						m_strUIName = "";
+						m_isCreateUI = FALSE;
+						MSG_BOX("CUI_Maker::Make_Layers, Layer Create Failed");
+					}
+					else
+					{
+						auto* pUI = dynamic_cast<CToolUI*>(pResult);
+						if (nullptr != pUI) {
+							if (FAILED(pCanvas->Safe_Add_UI(pUI)))
+							{
+								m_strUIName = "";
+								m_isCreateUI = FALSE;
+								MSG_BOX("CUI_Maker::Make_UI, UI Add Failed");
 							}
+
+							if(FAILED(m_pUIManager->Safe_Add_UICache(m_strUIName, pUI)))
+							{
+								m_strUIName = "";
+								m_isCreateUI = FALSE;
+								MSG_BOX("CUI_Maker::Make_UI, UI Add Failed");
+							}
+							CImGui_UIManager::GetInstance()->Request_SortUI();
 						}
 					}
 					m_strUIName = "";
@@ -569,21 +406,40 @@ void CUI_Maker::Make_UI()
 	ImGui::Spacing();
 
 	ImGui::TextDisabled("Select UI");
-	ImGui::BeginChild("UIList", ImVec2(0, 120.f), true);
+	ImGui::BeginChild("UIList", ImVec2(0.f, ImGui::GetContentRegionAvail().y), true);
+
 	auto* pUIVec = m_pUIManager->Safe_Access_UIVector();
 	const int32_t iNumUI = m_pUIManager->Get_NumUI();
 
 	if (nullptr != pUIVec)
 	{
+		std::vector<int32_t> vecOrder;
+		vecOrder.reserve(iNumUI);
+
 		for (int32_t i = 0; i < iNumUI; ++i)
 		{
-			auto* pUI = (*pUIVec)[i];
+			if (nullptr == (*pUIVec)[i])
+				continue;
+			vecOrder.push_back(i);
+		}
+
+		std::stable_sort(vecOrder.begin(), vecOrder.end(),
+			[pUIVec](int32_t a, int32_t b)
+			{
+				return (*pUIVec)[a]->Get_Name() < (*pUIVec)[b]->Get_Name();
+			});
+
+		for (int32_t idx : vecOrder)
+		{
+			auto* pUI = (*pUIVec)[idx];
 			if (nullptr == pUI)
 				continue;
 
-			bool selected = (m_pUIManager->Get_CurUIIndex() == i);
+			ImGui::PushID(idx);
+			bool selected = (m_pUIManager->Get_CurUIIndex() == idx);
 			if (ImGui::Selectable(pUI->Get_Name().c_str(), selected))
-				m_pUIManager->Safe_Change_UI(i);
+				m_pUIManager->Safe_Change_UI(idx);
+			ImGui::PopID();
 		}
 	}
 	else
@@ -594,6 +450,7 @@ void CUI_Maker::Make_UI()
 	ImGui::EndChild();   // UIList
 	ImGui::EndChild();   // UICard
 	ImGui::PopID();
+
 }
 
 _bool CUI_Maker::Scrub_Float(const _char* label, const _char* Id, OUT _float* pValue, float fValuePerPixel, float fValuePerPixel_fast, float fStep, float fStep_fast, float fSize)
@@ -663,8 +520,41 @@ void CUI_Maker::Input_Canvas_TransformInfo()
 
 		*pCanvas->Get_Width_Ptr() = Viewports.Width;
 		*pCanvas->Get_Height_Ptr() = Viewports.Height;
-		pCanvas->Set_isUsingViewport(TRUE);
 	}
+}
+
+bool CUI_Maker::Begin_Card(const char* Label, const char* ID, float fHeight)
+{
+	ImGui::PushID(ID);
+
+	if (Label && Label[0] != '\0')
+		ImGui::SeparatorText(Label);
+
+	m_vLastCardPos = ImGui::GetCursorScreenPos();
+	m_vLastCardSize = ImVec2(ImGui::GetContentRegionAvail().x, fHeight);
+
+	auto* dl = ImGui::GetWindowDrawList();
+	dl->AddRectFilled(m_vLastCardPos,
+		ImVec2(m_vLastCardPos.x + m_vLastCardSize.x, m_vLastCardPos.y + m_vLastCardSize.y),
+		IM_COL32(30, 30, 30, 200), 8.0f);
+
+	dl->AddRect(m_vLastCardPos,
+		ImVec2(m_vLastCardPos.x + m_vLastCardSize.x, m_vLastCardPos.y + m_vLastCardSize.y),
+		IM_COL32(90, 90, 90, 255), 8.0f);
+
+	ImGui::SetCursorScreenPos(ImVec2(m_vLastCardPos.x + 10.0f, m_vLastCardPos.y + 10.0f));
+	return ImGui::BeginChild("CardInner", ImVec2(m_vLastCardSize.x - 20.0f, m_vLastCardSize.y - 20.0f),
+		false, ImGuiWindowFlags_NoScrollbar);
+}
+
+void CUI_Maker::End_Card()
+{
+	ImGui::EndChild();
+
+	ImGui::SetCursorScreenPos(m_vLastCardPos);
+	ImGui::Dummy(m_vLastCardSize);
+
+	ImGui::PopID();
 }
 
 CUI_Maker* CUI_Maker::Create(const _char* pLabel, CLevel* pOwner, ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)

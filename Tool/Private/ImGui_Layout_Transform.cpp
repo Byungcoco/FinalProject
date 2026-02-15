@@ -73,12 +73,10 @@ HRESULT CImGui_Layout_Transform::Render(CToolObject* pGo)
 
         if (ImGui::BeginTable("Transform#map", 18, ImGuiTableFlags_SizingStretchSame))
         {
-            CTransform* pTransform = pGo->Get_Component<CTransform>();
-            Matrix matWorld = pTransform->Get_WorldMatrix();
             Vec3 vScale = {};
             Quat vQuaternion = {};
             Vec3 vTranslation = {};
-            if (matWorld.Decompose(vScale, vQuaternion, vTranslation))
+            if (pGo->Get_SRT(vScale, vQuaternion, vTranslation))
                 bDecomposed = true;
 
             ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, 60.0f);
@@ -138,11 +136,7 @@ HRESULT CImGui_Layout_Transform::Render(CToolObject* pGo)
             if (m_pPrev && m_pPrev == pGo && bDirty && bDecomposed)
             {
                 vQuaternion.Normalize();
-                matWorld = Matrix::CreateScale(vScale) * Matrix::CreateFromQuaternion(vQuaternion) * Matrix::CreateTranslation(vTranslation);
-                pTransform->Set_Info(TRANSFORM_INFO_STATE::RIGHT, matWorld.Right());
-                pTransform->Set_Info(TRANSFORM_INFO_STATE::UP, matWorld.Up());
-                pTransform->Set_Info(TRANSFORM_INFO_STATE::LOOK, matWorld.Backward());
-                pTransform->Set_Info(TRANSFORM_INFO_STATE::POS, matWorld.Translation());
+                pGo->Set_WorldMatrix(vScale , vQuaternion , vTranslation);
             }
 
             m_pPrev = pGo;

@@ -11,9 +11,11 @@ enum class ECategory : _uint
 {
 	MAP,
 	EFFECT,
+	EFFECTEVENT,
 	UI,
 	ANIMATION,
 	CAMERA,
+	OVERLAP_SCRIPT,
 	END
 };
 inline constexpr _uint g_CategoryCount{ ENUM_TO_UINT(ECategory::END) };
@@ -25,6 +27,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ECategory,
 		{ECategory::UI, "UI"},
 		{ECategory::ANIMATION, "ANIMATION"},
 		{ECategory::CAMERA, "CAMERA"},
+		{ECategory::OVERLAP_SCRIPT, "OVERLAP_SCRIPT"},
 		{ECategory::END, "END"}
 	}
 )
@@ -32,6 +35,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(ECategory,
 /////////////////-------------------  ANIMATION  -------------------/////////////////
 enum class EAnimationType : _uint
 {
+
 	END
 };
 inline constexpr _uint g_AnimationTypeCount{ ENUM_TO_UINT(EAnimationType::END) };

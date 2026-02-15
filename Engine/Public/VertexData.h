@@ -2,6 +2,33 @@
 
 NS_BEGIN(Engine)
 
+///////////////
+///// 필독 /////
+///////////////
+/*
+* VTX 정보 늘릴 때마다 이 헤더파일의 가장 아래에 LayoutDesc 작성을 해주어야함!
+* enum class에 추가 및 매칭되는 Index에 Desc 추가!
+* 현재 FxShaderVariant에서 InputLayout을 생성할때 아래 전역 배열을 참조하기때문에
+* Index 순서도 매우 중요!
+*/
+
+enum class EVtxLayout : unsigned int
+{
+	VTXPOS = 0,
+	VTXPOSCOL,
+	VTXPOSTEX,
+	VTXCUBE,
+	VTXNORTEX,
+	VTXMESH,
+	VTXANIMMESH,
+	VTXPOSTEX_PARTICLE,
+	VTXPOS_PARTICLE,
+	VTXPOS_PARTICLEMESH,
+	VTX_INSTANCE_MESH,
+	NONE, // ComputeShade용
+	END
+};
+
 typedef struct tagVertexData
 {
 	SimpleMath::Vector3 vPosition = { 0.f, 0.f, 0.f };
@@ -28,7 +55,7 @@ typedef struct tagVertexPositionColor
 
 typedef struct tagVertexPositionTexcoord
 {
-	SimpleMath::Vector3 vPosition = {0.f, 0.f, 0.f};
+	SimpleMath::Vector3 vPosition = { 0.f, 0.f, 0.f };
 	SimpleMath::Vector2 vUV = { 0.f, 0.f };
 
 	static constexpr unsigned int iNumElements = { 2 };
@@ -111,11 +138,8 @@ typedef struct tagVertexAnimationMesh
  
 typedef struct tagVertexParticleInstance
 {
-	SimpleMath::Vector4		vRight = { 0.f, 0.f, 0.f, 0.f };
-	SimpleMath::Vector4		vUp = { 0.f, 0.f, 0.f, 0.f };
-	SimpleMath::Vector4		vLook = { 0.f, 0.f, 0.f, 0.f };
-	SimpleMath::Vector4		vTranslation = { 0.f, 0.f, 0.f, 1.f };
-	SimpleMath::Vector2		vLifeTime = { 0.f, 0.f };
+	unsigned int		vInstanceNumber = { 0 };
+	//SimpleMath::Vector3	vPadding = { 0.f, 0.f, 0.f };
 }VTXPARTICLE;
 
 typedef struct tagVertexInstance
@@ -127,41 +151,53 @@ typedef struct tagVertexInstance
 }VTX_INSTANCE;
 
 
+typedef struct tagEffectInstance
+{
+	SimpleMath::Vector4 vRight;
+	SimpleMath::Vector4 vUp;
+	SimpleMath::Vector4 vLook;
+	SimpleMath::Vector4 vTrans;
+
+	SimpleMath::Vector2 vLifeTime;
+}EFFECT_INSTANCE;
+
 typedef struct tagVertexPosTexParticle
 {
-	static const unsigned int		iNumElements = { 7 };
+	static const unsigned int		iNumElements = { 3 };
 
 	static constexpr D3D11_INPUT_ELEMENT_DESC		Elements[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
 
-		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "TEXCOORD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "TEXCOORD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "TEXCOORD", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "TEXCOORD", 5, DXGI_FORMAT_R32G32_FLOAT, 1, 64, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1}
+
+		//{ "TEXCOORD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "TEXCOORD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "TEXCOORD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "TEXCOORD", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+
 	};
 }VTXPOSTEX_PARTICLE;
 
 typedef struct tagVertexPosParticle
 {
-	static const unsigned int		iNumElements = { 6 };
+	static const unsigned int		iNumElements = { 2 };
 
 	static constexpr D3D11_INPUT_ELEMENT_DESC		Elements[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
 
-		{ "WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1},
 
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 64, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32_UINT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
 	};
 }VTXPOS_PARTICLE;
 
 typedef struct tagVertexParticleMesh
 {
-	static constexpr unsigned int iNumElements = { 10 };
+	static constexpr unsigned int iNumElements = { 6 };
 	static constexpr D3D11_INPUT_ELEMENT_DESC Elements[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -170,12 +206,12 @@ typedef struct tagVertexParticleMesh
 		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
 
-		{ "WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
-		{ "WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32_UINT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
+		//{ "WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
 
-		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
 	};
 }VTXPOS_PARTICLEMESH;
 
@@ -200,5 +236,25 @@ typedef struct tagVertexInstanceMesh
 	};
 }VTX_INSTANCE_MESH;
 
+struct LayoutDesc
+{
+	const D3D11_INPUT_ELEMENT_DESC* pElement{ nullptr };
+	unsigned int iCount{ 0 };
+};
 
+static const LayoutDesc g_layoutTable[ENUM_TO_UINT(EVtxLayout::END)] =
+{
+	{VTXPOS::Elements, VTXPOS::iNumElements},
+	{VTXPOSCOL::Elements, VTXPOSCOL::iNumElements},
+	{VTXPOSTEX::Elements, VTXPOSTEX::iNumElements},
+	{VTXCUBE::Elements, VTXCUBE::iNumElements},
+	{VTXNORTEX::Elements, VTXNORTEX::iNumElements},
+	{VTXMESH::Elements, VTXMESH::iNumElements},
+	{VTXANIMMESH::Elements, VTXANIMMESH::iNumElements},
+	{VTXPOSTEX_PARTICLE::Elements, VTXPOSTEX_PARTICLE::iNumElements},
+	{VTXPOS_PARTICLE::Elements, VTXPOS_PARTICLE::iNumElements},
+	{VTXPOS_PARTICLEMESH::Elements, VTXPOS_PARTICLEMESH::iNumElements},
+	{VTX_INSTANCE_MESH::Elements, VTX_INSTANCE_MESH::iNumElements},
+	{} // NONE 도 Index 맞춰서
+};
 NS_END

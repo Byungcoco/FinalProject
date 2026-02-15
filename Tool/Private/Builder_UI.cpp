@@ -2,11 +2,9 @@
 #include "Builder_UI.h"
 
 #include "ToolCanvas.h"
-#include "ToolLayer.h"
 #include "ToolUI.h"
 
 #include "ImGui_UIManager.h"
-#include "UIAction_Registry.h"
 #include "GameInstance.h"
 
 CBuilder_UI::CBuilder_UI(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, _uint iLevelID)
@@ -24,6 +22,7 @@ HRESULT CBuilder_UI::Build(const CDataDocumentBase& document)
 	if (document.Get_Category() != DTO::ECategory::UI)
 		return E_FAIL;
 
+	m_iIndex = 0;
 	const auto& doc = static_cast<const CDataDocument_UI&>(document);
 	// For. Canvas
 	{
@@ -38,16 +37,49 @@ HRESULT CBuilder_UI::Build(const CDataDocumentBase& document)
 				return E_FAIL;
 		}
 	}
-	// For. Layer
+	// For. Text
 	{
-		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::LAYER));
+		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::UI_TEXT));
 		for (const auto& pObjectData : vecDataList)
 		{
-			const auto* pDto = static_cast<const Engine::CUI_Layer_DTO*>(pObjectData);
-			if (FAILED(Create_LayerDTO(pDto->Get_Data())))
+			const auto* pDto = static_cast<const Engine::CUI_Text_DTO*>(pObjectData);
+			if (FAILED(Create_TextDTO(pDto->Get_Data())))
 				return E_FAIL;
 		}
 	}
+	// For. Trigger
+	{
+		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::TRIGGER));
+		for (const auto& pObjectData : vecDataList)
+		{
+			const auto* pDto = static_cast<const Engine::CUI_Trigger_DTO*>(pObjectData);
+			if (FAILED(Create_TriggerDTO(pDto->Get_Data())))
+				return E_FAIL;
+		}
+	}
+
+	// For. ButtonTrigger
+	{
+		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::BUTTON_TRIGGER));
+		for (const auto& pObjectData : vecDataList)
+		{
+			const auto* pDto = static_cast<const Engine::CUI_ButtonTrigger_DTO*>(pObjectData);
+			if (FAILED(Create_ButtonTriggerDTO(pDto->Get_Data())))
+				return E_FAIL;
+		}
+	}
+
+	// For. DImage
+	{
+		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::DYNAMIC_IMAGE));
+		for (const auto& pObjectData : vecDataList)
+		{
+			const auto* pDto = static_cast<const Engine::CUI_DImage_DTO*>(pObjectData);
+			if (FAILED(Create_DImageDTO(pDto->Get_Data())))
+				return E_FAIL;
+		}
+	}
+
 	// For. GenericUI
 	{
 		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::GENERICUI));
@@ -58,16 +90,16 @@ HRESULT CBuilder_UI::Build(const CDataDocumentBase& document)
 				return E_FAIL;
 		}
 	}
-	// For. Event
-	{
-		const vector<Engine::IObjectDataBase*> vecDataList = doc.Get_ListByType(ENUM_TO_UINT(DTO::EUIType::EVENT));
-		for (const auto& pObjectData : vecDataList)
-		{
-			const auto* pDto = static_cast<const Engine::CUI_EventBindData_DTO*>(pObjectData);
-			if (FAILED(Create_EventBindDataDTO(pDto->Get_Data())))
-				return E_FAIL;
-		}
-	}
+
+	CImGui_UIManager::GetInstance()->Move_CanvasCache(m_pCanvasCache);
+	CImGui_UIManager::GetInstance()->Move_UICache(m_pUICache);
+
+	m_TextDataCache.clear();
+	m_TriggerDataCache.clear();
+	m_ButtonTriggerDataCache.clear();
+	m_DImageDataCache.clear();
+
+	CImGui_UIManager::GetInstance()->Request_SortUI();
 	return S_OK;
 }
 
@@ -103,38 +135,6 @@ HRESULT CBuilder_UI::Create_CanvasDTO(const DTO::TUI_CanvasData& data)
 	return S_OK;
 }
 
-HRESULT CBuilder_UI::Create_LayerDTO(const DTO::TUI_LayerData& data)
-{
-	if (data.eType != DTO::EUIType::LAYER)
-		return E_FAIL;
-
-	CToolLayer::TOOLLAYER_DESC Desc = {};
-	Desc.iLevelIndex = static_cast<uint32_t>(ELevelType::UI);
-	Desc.strTag = data.strTag;
-	Desc.isInitVisible = TRUE;
-	Desc.strCanvasName = data.strCanvasName;
-
-	_wstring wstrLayerTag = Engine_Utils::ToWString(Desc.strCanvasName) + L"_Layer";
-	CGameObject* pResult = m_pGameInstance->Add_GameObject(Desc.iLevelIndex, g_wszPrototypeTagLayer, Desc.iLevelIndex, wstrLayerTag, &Desc);
-	if (pResult == nullptr)
-		return E_FAIL;
-	 
-	auto* pLayer = dynamic_cast<CToolLayer*>(pResult);
-	if (nullptr == pLayer)
-		return E_FAIL;
-
-	auto iter = m_pCanvasCache.find(Desc.strCanvasName);
-	if (iter == m_pCanvasCache.end())
-		return E_FAIL;
-
-	if (FAILED(iter->second->Safe_Add_Layer(pLayer)))
-		return E_FAIL;
-	
-	m_pLayerCache.emplace(Desc.strTag, pLayer);
-	
-	return S_OK;
-}
-
 HRESULT CBuilder_UI::Create_GenericUIDTO(const DTO::TUI_GenericUIData& data)
 {
 	if (data.eType != DTO::EUIType::GENERICUI)
@@ -142,20 +142,67 @@ HRESULT CBuilder_UI::Create_GenericUIDTO(const DTO::TUI_GenericUIData& data)
 
 	/* 데이터를 이용해서 Object 만들기 */
 	CToolUI::TOOLUI_DESC Desc = {};
-	Desc.iLevelIndex = static_cast<uint32_t>(ELevelType::UI);
-
-	Desc.strName = data.strTag;
+	Desc.iLevelIndex		= static_cast<uint32_t>(ELevelType::UI);
+	Desc.eClassType			= data.eClassType;
+	Desc.strName			= data.strTag;
 	Desc.iRectTransformType = data.iRectTransformType;
-	Desc.fWidth = data.fWidth;
-	Desc.fHeight = data.fHeight; 
-	Desc.fX = data.fPosX;
-	Desc.fY = data.fPosY;
-	Desc.fZ = data.fPosZ;
-	Desc.strInitTextureTag = data.strTextureTag;
-	Desc.iInitTextureIndex = data.iTextureIndex;
-	Desc.strCanvasName = data.strCanvasName;
-	Desc.strLayerName = data.strLayerName;
+	Desc.fWidth				= data.fWidth;
+	Desc.fHeight			= data.fHeight; 
+	Desc.fX					= data.fPosX;
+	Desc.fY					= data.fPosY;
+	Desc.fZ					= data.fPosZ;
+	Desc.strInitTextureTag	= data.strTextureTag;
+	Desc.strCanvasName		= data.strCanvasName;
+	Desc.isInitVisible		= data.isVisible;
+	Desc.isUseColorTint		= data.isUseColorTint;
+	Desc.vColorTint			= data.vColorTint;
+	Desc.iShaderPass		= data.iShaderPass;
+	Desc.iFillDir			= data.iFillDir;
+	Desc.iFlip				= data.iFlip;
+	Desc.fDelay				= data.fDelay;
+	Desc.fAlpha				= data.fAlphaRatio;
+	Desc.eSubClassType		= data.eSubClassType;
 
+	Desc.iIndex				= m_iIndex;
+	if (data.eClassType == DTO::EUIClassType::UI_TEXT)
+	{
+		auto iter = m_TextDataCache.find(data.strTag);
+		if (iter == m_TextDataCache.end())
+			return E_FAIL;
+
+		Desc.tTextData = iter->second;
+	}
+	else if (data.eClassType == DTO::EUIClassType::TRIGGER)
+	{
+		auto iter = m_TriggerDataCache.find(data.strTag);
+		if (iter == m_TriggerDataCache.end())
+			return E_FAIL;
+
+		Desc.tTriggerData = iter->second;
+	}
+	else if (data.eClassType == DTO::EUIClassType::BUTTON_TRIGGER)
+	{
+		auto iter = m_ButtonTriggerDataCache.find(data.strTag);
+		if (iter == m_ButtonTriggerDataCache.end())
+			return E_FAIL;
+
+		Desc.tButtonTriggerData = iter->second;
+	}
+	else if (data.eClassType == DTO::EUIClassType::DYNAMIC_IMAGE)
+	{
+		auto iter = m_DImageDataCache.find(data.strTag);
+		if (iter == m_DImageDataCache.end())
+			return E_FAIL;
+
+		Desc.tDImageData = iter->second;
+	}
+
+
+	auto iterCanvas = m_pCanvasCache.find(Desc.strCanvasName);
+	if (iterCanvas == m_pCanvasCache.end())
+		return E_FAIL;
+
+	Desc.pCacheCanvas = iterCanvas->second;
 	_wstring wstrLayerTag = Engine_Utils::ToWString(data.strCanvasName) + L"_Layer";
 	CGameObject* pResult = m_pGameInstance->Add_GameObject(Desc.iLevelIndex, g_wszPrototypeTagUI,Desc.iLevelIndex, wstrLayerTag, &Desc);
 	if (pResult == nullptr)
@@ -165,30 +212,47 @@ HRESULT CBuilder_UI::Create_GenericUIDTO(const DTO::TUI_GenericUIData& data)
 	if (nullptr == pUI)
 		return E_FAIL;
 
-	auto iter = m_pLayerCache.find(data.strLayerName);
-	if (iter == m_pLayerCache.end())
-		return E_FAIL;
-
-	if (FAILED(iter->second->Safe_Add_UI(pUI)))
+	if (FAILED(iterCanvas->second->Safe_Add_UI(pUI)))
 		return E_FAIL;
 
 	m_pUICache.emplace(data.strTag, pUI);
-
+	m_iIndex++;
 	return S_OK;
 }
 
-HRESULT CBuilder_UI::Create_EventBindDataDTO(const DTO::TUI_EventBindData& data)
+HRESULT CBuilder_UI::Create_TextDTO(const DTO::TUI_TextData& data)
 {
-	if (data.eType != DTO::EUIType::EVENT)
+	if (data.eType != DTO::EUIType::UI_TEXT)
 		return E_FAIL;
 
-	auto iter = m_pUICache.find(data.strOwnerTag);
-	if (iter == m_pUICache.end())
+	m_TextDataCache.emplace(data.strOwnerName, data);
+	return S_OK;
+}
+
+HRESULT CBuilder_UI::Create_TriggerDTO(const DTO::TUI_TriggerData& data)
+{
+	if (data.eType != DTO::EUIType::TRIGGER)
 		return E_FAIL;
 
-	if (FAILED(iter->second->Bind_Action(data.eEvent, DTO::StringToUIFunctype(data.strActionKey), data.Params)))
+	m_TriggerDataCache.emplace(data.strOwnerName, data);
+	return S_OK;
+}
+
+HRESULT CBuilder_UI::Create_ButtonTriggerDTO(const DTO::TUI_ButtonTriggerData& data)
+{
+	if (data.eType != DTO::EUIType::BUTTON_TRIGGER)
 		return E_FAIL;
 
+	m_ButtonTriggerDataCache.emplace(data.strOwnerName, data);
+	return S_OK;
+}
+
+HRESULT CBuilder_UI::Create_DImageDTO(const DTO::TUI_DImageData& data)
+{
+	if (data.eType != DTO::EUIType::DYNAMIC_IMAGE)
+		return E_FAIL;
+
+	m_DImageDataCache.emplace(data.strOwnerName, data);
 	return S_OK;
 }
 

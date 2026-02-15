@@ -37,6 +37,9 @@ class CCollider;
 class CGameObject;
 class CCameraMan;
 class CLayer;
+class CFxEffectAsset;
+class CFxShaderVariant;
+
 
 class ENGINE_DLL CGameInstance final : public CBase
 {
@@ -79,6 +82,11 @@ public:
 
 #pragma endregion
 
+#pragma region SHADERASSET_MANAGER
+	CFxEffectAsset* GetOrCreate_FxEffectAsset(const path& filePath);
+	CFxShaderVariant* GetOrCreate_Variant(const path& filePath, EVtxLayout eVertexLayoutID);
+#pragma endregion
+
 #pragma region LEVEL_MANAGER
 	HRESULT					Immediately_ChangeLevel(_uint iNewLevelID, class CLevel* pNewLevel);
 	void					Request_ChangeLevel(_uint iNewLevelID, class CLevel* pNewLevel);
@@ -90,6 +98,7 @@ public:
 
 #pragma region TIMER_MANAGER
 	_float					Get_TimeDelta(const _tchar* pTimerTag);
+	void					Set_MaxTimeDelta(const _tchar* pTimerTag, _float fMaxTimeDelta);
 	HRESULT					Add_Timer(const _tchar* pTimerTag);
 	void					Remove_Timer(const _tchar* pTimerTag);
 	void					Compute_TimeDelta(const _tchar* pTimerTag);
@@ -113,6 +122,7 @@ public:
 	void					Request_AddObject(_uint iCloneLevelIndex, const wstring& wstrLayerTag, CGameObject* pGo, std::function<void(CGameObject*)> onSpawnedCallback = nullptr);
 	void					Request_AddObject(_uint iPrototypeLevelIndex, const wstring& wstrPrototypeTag,
 							_uint iCloneLevelIndex, const wstring& wstrLayerTag, void* pArg = nullptr, std::function<void(CGameObject*)> onSpawnedCallback = nullptr);
+	void					Request_AddObject(_uint iPoolLevelIndex, const wstring& wstrPoolTag, _uint iSpawnLevelIndex, void* pArg, std::function<void(CGameObject*)> onSpawnedCallback = nullptr);
 	void					Request_DeleteGameObject(_uint iCloneLevelIndex, const wstring& wstrLayerTag, CGameObject* pGo);
 
 	CGameObject*			Get_GameObject(_uint iLevelIndex, const wstring& wstrLayerTag, _uint iObjectIndex);
@@ -207,6 +217,12 @@ public:
 	HRESULT Regist_Document(_uint iLevelID, DTO::ECategory eCategory);
 #pragma endregion
 
+#pragma region OCTREE_MANAGER
+	HRESULT Register_Octree(CGameObject* pGo, RENDER_CATEGORY eCategory, const BoundingBox& AABB, _bool bDynamic = false);
+	void Unregister(CGameObject* pGo);
+	HRESULT Ready_Octree(const OCTREE_DESC& desc);
+#pragma endregion
+
 #pragma region RENDER_MANAGER
 	inline void Push_RenderObject(RENDER_CATEGORY eCategory, CGameObject* pGO);
 	inline void Push_DebugComponent(class CComponent* pComp);
@@ -226,7 +242,7 @@ public:
 
 #pragma region FONT_MANAGER
 	HRESULT Add_Font(const _wstring& strFontTag, const _tchar* pFontFilePath);
-	HRESULT Draw_Text(const _wstring& strFontTag, const _tchar* pText, const Vec2& vPosition, Vec4 vColor = Vec4(1.f, 1.f, 1.f, 1.f));
+	HRESULT Draw_Text(const _wstring& strFontTag, const _tchar* pText, const Vec2& vPosition, Vec4 vColor = Vec4(1.f, 1.f, 1.f, 1.f), const _float fRotate = 0.f, const _float fScale = 1.f);
 #pragma endregion
 
 #pragma region EVENTBUS_MANAGER
@@ -247,17 +263,23 @@ public:
 #pragma endregion
 
 #pragma region FRUSTRUM
-	HRESULT Frustrum_Init();
-	_bool Culling_AABB(class CCollider* pCollider);
+	void Ready_Frustrum(); 
+	_float Get_FrustrumMidStart() const;
+	_float Get_FrustrumFarStart() const;
+	void Resize_SplitFrustrum(const _float fMidStart, const _float fFarStart);
+	EFrustrumTier Classify_BySplitFrustrum(const BoundingBox &AABB);
+	EFrustrumTier Classify_BySplitFrustrum(const BoundingSphere& Sphere);
+	BoundingFrustum* Get_BoundingFrustrum_Local();
+	BoundingFrustum* Get_BoundingFrustrum_World();
 #pragma endregion
 
 #pragma region RENDERTARGET_MANAGER
 	HRESULT Add_RenderTarget(ERenderTarget eTarget, const CRenderTarget::RENDERTARGET_DESC* pDesc);
 	HRESULT Add_MRT(EMRTLayer eMRTLayer, ERenderTarget eTarget);
-	HRESULT Begin_MRT(EMRTLayer eMRTLayer);
+	HRESULT Begin_MRT(EMRTLayer eMRTLayer, _bool bClear = true);
 	HRESULT End_MRT();
 	HRESULT Bind_RT_ShaderResource(ERenderTarget eTarget, class CShader* pShader);
-	HRESULT Copy_BackBufferResource(ERenderTarget eTarget);
+	HRESULT Copy_SceneHDRResource(ERenderTarget eTarget);
 #ifdef _DEBUG
 	HRESULT Ready_RT_Debug(ERenderTarget eTarget, _float fX, _float fY, _float fSizeX, _float fSizeY);
 	HRESULT Debug_RT_Render(EMRTLayer eMRTLayer, class CShader* pShader, class CVIBuffer_Rect_Tex* pVIBuffer);
@@ -282,6 +304,8 @@ public:
 	void ClearPhysics();
 	PxTransform XMMatrixToPxTransform(Matrix mat);
 	Matrix PxTransformToXMMatrix(PxTransform pxTransform);
+	_bool Execute_Overlap(PxGeometry& shape, PxTransform& transform, OUT PxOverlapBuffer& hit, PxQueryFilterData& filterData, PxQueryFilterCallback* filterCallback);
+	class CPhysics_QueryFilterCallback* GetQueryFilterCallback();
 	void SerializeStaticMesh(std::filesystem::path path, vector<PxTriangleMesh*> meshes);
 	PxCollection* DeserializeStaticMesh(std::filesystem::path path);
 	void SerializeConvexMesh(std::filesystem::path path, vector<PxConvexMesh*> meshes);
@@ -290,11 +314,15 @@ public:
 	void DeserializeLevel(std::filesystem::path path) {}
 	vector<PxShape*> GetShape(PHYSICSCOLLIDER_DESC* pDesc);
 	vector<PxShape*> GetMeshShape(PHYSICSCOLLIDER_DESC* pDesc);
-	PxRigidActor* GetActor(PHYSICSRIGIDBODY_DESC* rigidBodyDesc, PHYSICSCOLLIDER_DESC* colliderDesc, vector<PxShape*>& shapes);
+	vector<PxShape*> CopyShapes(vector<PxShape*>& shapes);
+	vector<PxRigidActor*> GetActor(PHYSICSRIGIDBODY_DESC* rigidBodyDesc, PHYSICSCOLLIDER_DESC* colliderDesc, vector<PxShape*>& shapes);
 	PxController* GetController(PHYSICSCCT_DESC* pDesc);
 	void RegisterPhysicsMesh(_uint levelIndex, _wstring prototypeTag);
+	PxQuat GetPureRotation(const Matrix& mat);
+	PxVec3 GetPureScale(const Matrix& mat);
 #ifdef _DEBUG
 	void Physics_Render(PxRigidActor* pActor, XMVECTOR color = DirectX::Colors::White);
+	void Physics_Render(const PxGeometry& geom, const PxTransform& transform, XMVECTOR color = DirectX::Colors::White);
 #endif // _DEBUG
 #pragma endregion
 
@@ -311,6 +339,7 @@ private:
 	class CDataRepository* m_pDataRepository = { nullptr };
 	class CTimer_Manager* m_pTimer_Manager = { nullptr };
 	class CSound_Manager* m_pSound_Manager = { nullptr };
+	class COctree_Manager* m_pOctree_Manager = { nullptr };
 	class CFont_Manager* m_pFont_Manager = { nullptr };
 	class CGraphic_Device* m_pGraphic_Device = { nullptr };
 	class CLevel_Manager* m_pLevel_Manager = { nullptr };
@@ -328,12 +357,15 @@ private:
 	class CRenderTarget_Manager* m_pRenderTarget_Manager = { nullptr };
 	class CPicking* m_pPicking = { nullptr };
 	class CFrustrum* m_pFrustrum = { nullptr };
+	class CShaderAsset_Manager* m_pShaderAsset_Manager = { nullptr };
 	class CPhysics_Module* m_pPhysics_Module = { nullptr };
 	class CUIAction_Registry* m_pUIAction_Registry = { nullptr };
 private:
 	std::mt19937_64 m_rng;
 public:
 	virtual void			Free() override;
+
+	friend class CRender_Manager;
 };
 
 #pragma region RESOURCE_MANAGER
