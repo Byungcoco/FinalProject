@@ -174,7 +174,6 @@ void CUIQuickSlot_Image::Tick_By_Type(const _float fTimeDelta)
 	{
 		if (!m_pParentCanvasCache->Get_CommonParam_bool()[BOOLEAN_SLOT_Z_KEY_HOLDING] || !CUIQuickSlot_Manager::GetInstance()->Get_QuickSlotOpen())
 			break;
-
 		WeaponType_To_Icon();
 	}
 		break;
