@@ -16,6 +16,8 @@
 #include "UIIcon_Component.h"
 #include "CameraEventBinder.h"
 #include "MyStat.h"
+#include "SoundEventBinder.h"
+#include "Body.h"
 #include "Lianhuo_GimmikController.h"
 
 // CustomState
@@ -74,6 +76,9 @@ HRESULT CBoss_Lianhuo::Initialize(void* pArg)
 		return E_FAIL;
 
 	if (FAILED(Ready_CustomStates()))
+		return E_FAIL;
+
+	if (FAILED(Ready_SoundHandler()))
 		return E_FAIL;
 
 	if (FAILED(Ready_StateIndexForDirecting()))
@@ -429,7 +434,15 @@ HRESULT CBoss_Lianhuo::Ready_Weapon()
 		weaponDesc.eModel = CWeapon::Weapon_ModelType::STATIC;
 		weaponDesc.eState = CWeapon::State::HAND;
 		weaponDesc.bMianWeapon = true;
-		weaponDesc.FDescFlag = 0;
+
+		//weaponDesc.FDescFlag = 0;
+
+		weaponDesc.FDescFlag = CWeapon::WeaponDescFlag::WF_RGBMappingOn;
+		weaponDesc.vColorR = Vec4(0.083333f, 0.055487f, 0.052951f, 1.f);
+		weaponDesc.vColorG = Vec4(0.375f, 0.341628f, 0.341628f, 1.f);
+		weaponDesc.vColorB = Vec4(0.635417f, 0.117982f, 0.049642f, 1.f);
+
+
 		if (FAILED(Add_Part(Part::SWORD, 0, L"Prototype_GameObject_Part_Sword", &weaponDesc)))
 			return E_FAIL;
 	}
@@ -588,6 +601,22 @@ HRESULT CBoss_Lianhuo::Ready_CustomStates()
 	if (FAILED(ADD_CUSTOM_STATE(CState_SpawnAttack, "SpawnAttack")))
 		return E_FAIL;
 
+	return S_OK;
+}
+
+HRESULT CBoss_Lianhuo::Ready_SoundHandler()
+{
+	CBody* pBody = Get_Part<CBody>(ENUM_TO_UINT(Part::BODY));
+	if (pBody == nullptr)
+		return E_FAIL;
+	CModel* pAnimModel = pBody->Get_Component<CModel>();
+	if (pAnimModel == nullptr)
+		return E_FAIL;
+	// 내부에서 Add_Component 해줌
+	CSoundEventBinder* pResult = CSoundEventBinder::Create(0, this, pAnimModel, L"../../Resources/Data/SoundAnimationData/Boss_Lian.json");
+	if (pResult == nullptr)
+		return E_FAIL;
+	Safe_Release(pResult);
 	return S_OK;
 }
 

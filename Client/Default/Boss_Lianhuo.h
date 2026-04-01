@@ -54,6 +54,7 @@ private:
 	HRESULT Ready_StateIndexForDirecting();
 	HRESULT Ready_CameraEvent();
 	HRESULT Ready_CustomStates();
+	HRESULT Ready_SoundHandler();
 	void Set_GhostTrailDesc();
 private:
 	_float m_fAccDT{false};
