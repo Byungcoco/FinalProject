@@ -515,7 +515,7 @@ HRESULT CUIQTE_Image::Spawn_FromPool(void* pArg)
 		break;
 		case DTO::EUIDImageSubClassType::QTE_LINE:
 		{
-			m_vCurrentNodePosOffset = pQTE+Data->vSpawnOffset;
+			m_vCurrentNodePosOffset = pQTEData->vSpawnOffset;
 			m_vPrevNodePosOffset = pQTEData->vPreSpawnOffset;
 			m_fWidth = 0.2f;
 		}
