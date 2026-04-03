@@ -423,7 +423,7 @@ HRESULT CLevel_Tutorial_Village::Ready_Camera_Layer(const wstring& wstrLayerTag)
 		CameraDesc.fViewWidth = (_float)g_iWinSizeX;
 		CameraDesc.fViewHeight = (_float)g_iWinSizeY;
 		CameraDesc.fNear = 0.1f;
-		CameraDesc.fFar = 1000.f;
+		CameraDesc.fFar = 1200.f;
 
 		goDesc.pTransform_Desc = &TransformDesc;
 		goDesc.pCamera_Desc = &CameraDesc;
