@@ -560,6 +560,9 @@ HRESULT CLevel_Tutorial_Boss::Awake(const _uint iLevelID)
 	if (FAILED(Ready_Octree()))
 		return E_FAIL;
 
+	if (FAILED(Bind_Subscribe()))
+		return E_FAIL;
+
 	if (FAILED(Ready_Camera_Setting(iLevelID)))
 		return E_FAIL;
 
@@ -596,10 +599,49 @@ HRESULT CLevel_Tutorial_Boss::Awake(const _uint iLevelID)
 
 	m_pGameInstance->PlayBGM(0, TO_HASH("TUTORIAL_BOSS_BGM"), 0.5f);
 
-	m_pGameInstance->PlayBGM(0, TO_HASH("ELITE_BOSS_BGM"), 0.5f);
+	//m_pGameInstance->PlayBGM(0, TO_HASH("ELITE_BOSS_BGM"), 0.5f);
 
 	return S_OK;
 }
+
+
+HRESULT	CLevel_Tutorial_Boss::Bind_Subscribe()
+{
+	m_pGameInstance->Subscribe<CCS_EVENT>([this](const CCS_BROADCAST_DESC& tDesc) {
+
+		for (auto& EventDesc : tDesc.vecCCS_Event_Desc)
+		{
+			_int iHash = TO_HASH(EventDesc.strSubscriberName.c_str());
+			switch (iHash)
+			{
+			case	TO_HASH("Tutorial_Boss_ChangeBgm"):
+			{
+				for (auto& ActionName : EventDesc.vecActionNames)
+				{
+					_int iActionHash = TO_HASH(ActionName.c_str());
+					switch (iActionHash)
+					{
+					case TO_HASH("Origin_Bgm"):
+						m_pGameInstance->PlayBGM(0, TO_HASH("TUTORIAL_BOSS_BGM2"), 0.5f);
+						break;
+					case TO_HASH("BossBattle_Bgm"):
+						m_pGameInstance->CrossFadeBGM(0, TO_HASH("Tutorial_Boss_Battle"), 0.5f , 0.3f , 0.3f);
+						break;
+					default:
+						break;
+					}
+				}
+			}
+			break;
+			default:
+				break;
+			}
+		}
+		});
+
+	return S_OK;
+}
+
 
 void CLevel_Tutorial_Boss::Update(const _float fTimeDelta)
 {

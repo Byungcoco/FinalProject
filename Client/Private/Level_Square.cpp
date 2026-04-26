@@ -163,7 +163,7 @@ HRESULT CLevel_Square::Awake(const _uint iLevelID)
 		CUI_Manager::GetInstance()->Request_LevelChange_With_Fade(Desc);
 	}
 
-	m_pGameInstance->Play_OneShot(0, TO_HASH("SQUARE_BGM"), 0.5f);
+	m_pGameInstance->PlayBGM(0, TO_HASH("Square"), 0.5f);
 
 
 	if (FAILED(m_pGameInstance->Bake_StaticShadow(m_pGameInstance->Get_MapMinMaxBounding())))

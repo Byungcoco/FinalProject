@@ -349,7 +349,7 @@ HRESULT CPlayer::Ready_GlobalEvent()
                     {
                     case TO_HASH("Xibila_Cinematic_End_Position"):
                     {
-                        Vec3 vChangePos = Vec3(339.393f, 270.5f, -323.06f);
+                        Vec3 vChangePos = Vec3(327.776f, 270.889f, -302.403f);
                         Get_Component<CPhysicsCCT>()->SetFootPosition(vChangePos);
 
                         CGameObject* pBoss = m_pGameInstance->Get_GameObject(m_pGameInstance->Get_CurrentLevelIndex(), g_wszBossLayer, 0);

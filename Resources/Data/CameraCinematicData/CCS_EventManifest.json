@@ -127,5 +127,18 @@
             }
         ],
         "Subscriber Name": "Lianhuo_Cinematic_State"
+    },
+    {
+        "Action Infos": [
+            {
+                "Explain": "",
+                "Name": "Origin_Bgm"
+            },
+            {
+                "Explain": "",
+                "Name": "BossBattle_Bgm"
+            }
+        ],
+        "Subscriber Name": "Tutorial_Boss_ChangeBgm"
     }
 ]

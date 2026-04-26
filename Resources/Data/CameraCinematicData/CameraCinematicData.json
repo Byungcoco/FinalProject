@@ -2384,6 +2384,12 @@
                             "Default"
                         ],
                         "Subscriber Name": "Xibila_Cinematic_State"
+                    },
+                    {
+                        "Action Names": [
+                            "BossBattle_Bgm"
+                        ],
+                        "Subscriber Name": "Tutorial_Boss_ChangeBgm"
                     }
                 ],
                 "Pitch Yaw Roll": {
