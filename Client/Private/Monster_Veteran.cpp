@@ -86,9 +86,6 @@ HRESULT CMonster_Veteran::Awake(const _uint iCurrentLevelID)
 	if (FAILED(Get_Component<CMonster_GimmikController>()->Awake(iCurrentLevelID)))
 		return E_FAIL;
 
-	m_pGameInstance->StopBGM_FadeOut(1.f);
-	m_pGameInstance->PlayBGM_FadeIn(0, TO_HASH("ELITE_BOSS_BGM"), 0.5f, 1.f);
-
 	{
 		UI_PREFAB_DATA ePrefabData = {};
 		UI_BOSS_NAMEPLATE_PREFAB_DATA Desc = {};

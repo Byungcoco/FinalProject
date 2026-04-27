@@ -3555,6 +3555,29 @@
                                             0
                                         ]
                                     }
+                                },
+                                {
+                                    "strCondition": "condition_in_melee_range",
+                                    "tParam": {
+                                        "bParam": [
+                                            false,
+                                            false,
+                                            false,
+                                            false
+                                        ],
+                                        "fParam": [
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "iParam": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ]
+                                    }
                                 }
                             ]
                         },
@@ -3565,6 +3588,29 @@
                             "vecConditionEntry": [
                                 {
                                     "strCondition": "condition_target_right90",
+                                    "tParam": {
+                                        "bParam": [
+                                            false,
+                                            false,
+                                            false,
+                                            false
+                                        ],
+                                        "fParam": [
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "iParam": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ]
+                                    }
+                                },
+                                {
+                                    "strCondition": "condition_in_melee_range",
                                     "tParam": {
                                         "bParam": [
                                             false,
@@ -3615,6 +3661,52 @@
                                             0
                                         ]
                                     }
+                                },
+                                {
+                                    "strCondition": "condition_target_out_of_melee_attack",
+                                    "tParam": {
+                                        "bParam": [
+                                            false,
+                                            false,
+                                            false,
+                                            false
+                                        ],
+                                        "fParam": [
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "iParam": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ]
+                                    }
+                                },
+                                {
+                                    "strCondition": "condition_in_attack_range",
+                                    "tParam": {
+                                        "bParam": [
+                                            false,
+                                            false,
+                                            false,
+                                            false
+                                        ],
+                                        "fParam": [
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "iParam": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ]
+                                    }
                                 }
                             ]
                         },
@@ -3625,6 +3717,52 @@
                             "vecConditionEntry": [
                                 {
                                     "strCondition": "condition_target_right180",
+                                    "tParam": {
+                                        "bParam": [
+                                            false,
+                                            false,
+                                            false,
+                                            false
+                                        ],
+                                        "fParam": [
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "iParam": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ]
+                                    }
+                                },
+                                {
+                                    "strCondition": "condition_target_out_of_melee_attack",
+                                    "tParam": {
+                                        "bParam": [
+                                            false,
+                                            false,
+                                            false,
+                                            false
+                                        ],
+                                        "fParam": [
+                                            0.0,
+                                            0.0,
+                                            0.0,
+                                            0.0
+                                        ],
+                                        "iParam": [
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ]
+                                    }
+                                },
+                                {
+                                    "strCondition": "condition_in_attack_range",
                                     "tParam": {
                                         "bParam": [
                                             false,
@@ -3832,6 +3970,8 @@
                         },
                         {
                             "mapRandomStatePool": {
+                                "AdvanceComboAttack01": 5.0,
+                                "AdvanceComboAttack02": 5.0,
                                 "Backdash": 5.0,
                                 "BackdashAttack": 5.0,
                                 "Screaming": 5.0
@@ -4003,8 +4143,8 @@
                     "tStateCoolDownTime": {
                         "bCountTime": true,
                         "bTimeReset": true,
-                        "fMaxTime": 15.0,
-                        "fMinTime": 15.0,
+                        "fMaxTime": 90.0,
+                        "fMinTime": 90.0,
                         "fTimeAcc": 0.0
                     },
                     "tStateLifeTime": {
@@ -4167,8 +4307,8 @@
                     "tStateCoolDownTime": {
                         "bCountTime": true,
                         "bTimeReset": true,
-                        "fMaxTime": 15.0,
-                        "fMinTime": 15.0,
+                        "fMaxTime": 90.0,
+                        "fMinTime": 90.0,
                         "fTimeAcc": 0.0
                     },
                     "tStateLifeTime": {
@@ -4331,8 +4471,8 @@
                     "tStateCoolDownTime": {
                         "bCountTime": true,
                         "bTimeReset": true,
-                        "fMaxTime": 15.0,
-                        "fMinTime": 15.0,
+                        "fMaxTime": 90.0,
+                        "fMinTime": 90.0,
                         "fTimeAcc": 0.0
                     },
                     "tStateLifeTime": {
@@ -4495,8 +4635,8 @@
                     "tStateCoolDownTime": {
                         "bCountTime": true,
                         "bTimeReset": true,
-                        "fMaxTime": 15.0,
-                        "fMinTime": 15.0,
+                        "fMaxTime": 90.0,
+                        "fMinTime": 90.0,
                         "fTimeAcc": 0.0
                     },
                     "tStateLifeTime": {

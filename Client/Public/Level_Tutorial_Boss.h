@@ -32,6 +32,8 @@ private:
 	HRESULT Ready_Dissolve();
 	HRESULT Ready_MonsterSkillObjectLayer();
 private:
+	HRESULT	Bind_Subscribe();
+private:
 	ECursorMode m_eCursorMode = ECursorMode::LockedHiddenCenter;
 public:
 	static CLevel_Tutorial_Boss*		Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
