@@ -26,7 +26,7 @@ public:
 protected:
 	explicit CCameraMan(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, CameraType eType);
 	explicit CCameraMan(const CCameraMan& rhs);
-	virtual ~CCameraMan() = default;
+	virtual ~CCameraMan() = d+efault;
 
 	virtual HRESULT Initialize_Prototype() PURE;
 	virtual HRESULT Initialize(void* pArg) PURE;
