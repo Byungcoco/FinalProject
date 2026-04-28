@@ -159,10 +159,10 @@ _bool CMonster_Dog::On_Hit(const HIT_DESC& hitDesc)
 	if (vHp.x <= 0)
 	{
 		m_pGameInstance->Broadcast<MONSTER_DEAD_EVENT_START>(this);
-		m_pGameInstance->Play_OneShot(0 /* static */, m_arrHitSoundHash[HitSoundHashNum::DEATH01_VO], 0.5f, 1.f, false);
+		m_pGameInstance->Play_OneShot(0 /* static */, m_arrHitSoundHash[HitSoundHashNum::DEATH01_VO], 0.5f, 1.f, true);
 	}
 	else
-		m_pGameInstance->Play_OneShot(0 /* static */, m_arrHitSoundHash[HitSoundHashNum::HURT01_VO], 0.5f, 1.f, false);
+		m_pGameInstance->Play_OneShot(0 /* static */, m_arrHitSoundHash[HitSoundHashNum::HURT01_VO], 0.5f, 1.f, true);
 
 	return result;
 }
