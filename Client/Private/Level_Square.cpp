@@ -163,7 +163,7 @@ HRESULT CLevel_Square::Awake(const _uint iLevelID)
 		CUI_Manager::GetInstance()->Request_LevelChange_With_Fade(Desc);
 	}
 
-	m_pGameInstance->Play_OneShot(0, TO_HASH("SQUARE_BGM"), 0.5f);
+	m_pGameInstance->PlayBGM(0, TO_HASH("Square"), 0.5f);
 
 
 	if (FAILED(m_pGameInstance->Bake_StaticShadow(m_pGameInstance->Get_MapMinMaxBounding())))
@@ -265,7 +265,8 @@ HRESULT CLevel_Square::Ready_Lights()
 	{
 		LIGHT_DESC desc = {};
 		desc.eType = LIGHT_TYPE::DIRECTIONAL;
-		desc.vDirection = Vec3{ 1.f, -1.f, 1.f };
+		desc.vDirection = Vec3{ 0.3f, -1.f, 0.f };
+		desc.vDirection.Normalize();
 		desc.vDiffuse = Vec4(0.7f, 0.7f, 0.7f, 1.f);
 		desc.vAmbient = Vec4(0.3f, 0.3f, 0.3f, 1.f);
 		desc.vSpecular = desc.vDiffuse;
@@ -296,8 +297,6 @@ HRESULT CLevel_Square::Ready_Lights()
 		desc.fFogNoiseSpeed = 0.2f;
 		m_pGameInstance->Commit_FogParam();
 	}
-	return S_OK;
-
 	return S_OK;
 }
 
@@ -606,7 +605,7 @@ void CLevel_Square::Update(const _float fTimeDelta)
 	m_fAccTime += fTimeDelta;
 
 
-	if (m_fAccTime >= 5.5f)
+	if (m_fAccTime >= 4.0f)
 	{
 		Setting_Citizen();
 		m_fAccTime = 0.f;

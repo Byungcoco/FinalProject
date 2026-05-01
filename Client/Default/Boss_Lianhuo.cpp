@@ -315,6 +315,8 @@ _bool CBoss_Lianhuo::On_Hit(const HIT_DESC& hitDesc)
 						{
 							Change_State_ForDirecting(EStateForDirecting::Condemned_Die);
 							m_pGameInstance->Broadcast<BOSS_UI_OFF>();
+							m_pGameInstance->CrossFadeBGM(0, TO_HASH("Game_End"),0.5f,0.3,0.5f);
+							m_pGameInstance->Play_OneShot(0, TO_HASH("Lianhuo_Dead"),0.3f);
 						}
 						else
 							Change_State_ForDirecting(EStateForDirecting::Condemned_Attacked);
@@ -413,7 +415,7 @@ HRESULT CBoss_Lianhuo::Ready_Ability()
 	CStatCom_Boss::BOSS_STAT_DESC desc = {};
 	desc.fCriticalAttack = 30.f;
 	desc.fCriticalRate = 0.4f;
-	desc.fMaxHp = 200000.f;
+	desc.fMaxHp = 300000.f;
 	desc.FStatFlags = CMyStat::StatFlags::None;
 	desc.vecExtraComputeOrder = vector<_uint>{ 0, 2 };
 

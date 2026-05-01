@@ -18,7 +18,6 @@
 #include "SoundEventBinder.h"
 #include "Body.h"
 #include "CameraEventBinder.h"
-
 #include "GameInstance.h"
 
 CBoss_Xibi::CBoss_Xibi(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
@@ -279,6 +278,8 @@ _bool CBoss_Xibi::On_Hit(const HIT_DESC& hitDesc)
 						{
 							Change_State_ForDirecting(EStateForDirecting::Condemned_Die);
 							m_pGameInstance->Broadcast<BOSS_UI_OFF>();
+							m_pGameInstance->CrossFadeBGM(0, TO_HASH("TUTORIAL_BOSS_BGM"), 0.5f, 0.3f, 0.3f);
+							m_pGameInstance->Play_OneShot(0, TO_HASH("Xibi_Dead"), 0.3f);
 						}
 						else
 						{
@@ -315,6 +316,7 @@ void CBoss_Xibi::On_Dying()
 	CMonsterControlContext* pControlContext = Get_Component<CMonsterControlContext>();
 	if (_bool bRequestedSucess = pControlContext->Set_Groggy(EGroggyState::Final))
 		m_pGameInstance->Broadcast<BOSS_GROGGY>();
+
 }
 
 void CBoss_Xibi::Try_Attack(const HIT_DESC& hitDesc)
@@ -344,7 +346,7 @@ HRESULT CBoss_Xibi::Ready_Ability()
 	CStatCom_Boss::BOSS_STAT_DESC desc = {};
 	desc.fCriticalAttack = 30.f;
 	desc.fCriticalRate = 0.4f;
-	desc.fMaxHp = 290000.f;
+	desc.fMaxHp = 200000.f;
 	desc.FStatFlags = CMyStat::StatFlags::None;
 	desc.vecExtraComputeOrder = vector<_uint>{ 0, 2 };
 
@@ -501,6 +503,7 @@ HRESULT CBoss_Xibi::Ready_SoundHandler()
 	Safe_Release(pResult);
 	return S_OK;
 }
+
 CBoss_Xibi* CBoss_Xibi::Create(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
 {
 	CBoss_Xibi* pInsatnce = new CBoss_Xibi(pDevice, pDeviceContext);

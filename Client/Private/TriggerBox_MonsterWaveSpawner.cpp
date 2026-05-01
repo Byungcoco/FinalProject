@@ -220,6 +220,11 @@ void CTriggerBox_MonsterWaveSpawner::QuestEnter()
 
 	m_tWaveData.iCurrentWaveCount = 0;
 	m_tWaveData.fCurrentWaveTime = 0.f;
+
+
+	m_pGameInstance->StopBGM_FadeOut(1.f);
+	m_pGameInstance->PlayBGM_FadeIn(0, TO_HASH("ELITE_BOSS_BGM"), 0.5f, 1.f);
+
 }
 
 void CTriggerBox_MonsterWaveSpawner::QuestExit()

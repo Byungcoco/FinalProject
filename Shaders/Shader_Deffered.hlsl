@@ -24,7 +24,7 @@ int Find_BakedSection(float3 vWorldPos)
 float SampleBakedShadowSection(float3 vWorldPos, float3 vWorldNormal, float fNDotL, int iSection)
 {
     ShaderBakedSection section = shaderBakedSectionParam.sections[iSection];
-    float fNormalOffset = 0.1f * (1.0f - fNDotL);
+    float fNormalOffset = 0.2f * (1.0f - fNDotL);
     
     float3 vBiasedPos = vWorldPos + vWorldNormal * fNormalOffset;
     
@@ -42,7 +42,7 @@ float SampleBakedShadowSection(float3 vWorldPos, float3 vWorldNormal, float fNDo
         return 1.f;
 
     float fCurrentDepth = vLightNDC.z;
-    float fBias = section.vShadowParams.x;
+    float fBias = section.vShadowParams.x * lerp(1.0f, 4.0f, 1.0f - fNDotL);
     float fStrength = section.vShadowParams.y;
     float2 vInvSize = section.vShadowParams.zw;
     float fSlice = (float) section.iArraySlice;
@@ -441,7 +441,7 @@ PS_OUT_LIGHT PS_MAIN_DIRECTIONAL(PS_IN_POS_TEX input)
     float fAlpha = max(0.045f, fClampedRough * fClampedRough);
 
     // Metal 값을 정리한다.
-    float fClampedMetal = saturate(fMetal);
+    float fClampedMetal = saturate(fMetal * 0.4f);
 
     // 금속이면 BaseColor를 F0로 쓰고, 아니면 0.04를 사용한다.
     float3 vF0 = lerp(float3(0.04f, 0.04f, 0.04f), vBaseColor, fClampedMetal);
@@ -568,7 +568,7 @@ PS_OUT_LIGHT PS_MAIN_POINT(PS_IN_POS_TEX input)
     float fAlpha = max(0.045f, fClampedRough * fClampedRough);
 
     // Metal 값을 정리한다.
-    float fClampedMetal = saturate(fMetal);
+    float fClampedMetal = saturate(fMetal * 0.4f);
 
     // 금속이면 BaseColor를 F0로 쓰고, 아니면 0.04를 사용한다.
     float3 vF0 = lerp(float3(0.04f, 0.04f, 0.04f), vBaseColor, fClampedMetal);
